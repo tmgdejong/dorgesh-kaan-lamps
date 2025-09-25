@@ -64,7 +64,7 @@ public enum Lamp
 	P1_N_LAMP_10(14, 23015, new WorldPoint(2739, 5362, 1), Area.P1_N, "House just east of Ur-tag"),
 	P1_N_LAMP_11(15, 23016, new WorldPoint(2733, 5350, 1), Area.P1_N, "House just south of Ur-tag"),
 	P1_N_LAMP_12(16, 23023, new WorldPoint(2705, 5348, 1), Area.P1_N, "House just south of Oldak's lab"),
-    // P1_N_LAMP_XX(xx, 23041, new WorldPoint(2701, 5366, 1), Area.P1_N, "Oldak's lab")
+    P1_N_LAMP_13(17, 23041, new WorldPoint(2701, 5366, 1), Area.P1_N, "Oldak's lab"),
 
 	// Plane 2 South
 	P2_S_LAMP_1(0, 22984, new WorldPoint(2741, 5283, 2), Area.P2_S, "Upstairs of the eastern house two houses south of the empty building"),
