@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -12,8 +13,11 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.GameObjectDespawned;
+import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
@@ -32,6 +36,8 @@ import net.runelite.client.util.ImageUtil;
 public class DKLampsPlugin extends Plugin
 {
 	private static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
+    private static final int WORKING_LAMP_ID = 22976;
+	private static final int BROKEN_LAMP_ID = 22977;
 
 	@Inject
 	private Client client;
@@ -51,8 +57,13 @@ public class DKLampsPlugin extends Plugin
 	private DKLampsPanel panel;
 	private NavigationButton navButton;
 
+    @Getter
+	private final Map<WorldPoint, GameObject> spawnedLamps = new HashMap<>();
+
 	@Getter
 	private Set<Lamp> brokenLamps = new HashSet<>();
+    private Set<Lamp> previouslyBrokenLamps = new HashSet<>();
+
 
     @Getter
 	private final Map<Lamp, LampStatus> lampStatuses = new EnumMap<>(Lamp.class);
@@ -60,7 +71,6 @@ public class DKLampsPlugin extends Plugin
     @Override
 	protected void startUp() throws Exception
 	{
-		log.info("Dorgesh-Kaan Lamps started!");
 		overlayManager.add(overlay);
 
         panel = new DKLampsPanel(this);
@@ -95,15 +105,39 @@ public class DKLampsPlugin extends Plugin
 		}
 	}
 
+    @Subscribe
+	public void onGameObjectSpawned(GameObjectSpawned event)
+	{
+		GameObject gameObject = event.getGameObject();
+		if (DKLampsHelper.isLamp(gameObject.getId()))
+		{
+			spawnedLamps.put(gameObject.getWorldLocation(), gameObject);
+		}
+	}
+
+	@Subscribe
+	public void onGameObjectDespawned(GameObjectDespawned event)
+	{
+		GameObject gameObject = event.getGameObject();
+		if (DKLampsHelper.isLamp(gameObject.getId()))
+		{
+			spawnedLamps.remove(gameObject.getWorldLocation());
+		}
+	}
 
     @Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
-		if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN ||
+		if (gameStateChanged.getGameState() == GameState.LOADING ||
+			gameStateChanged.getGameState() == GameState.LOGIN_SCREEN ||
 			gameStateChanged.getGameState() == GameState.HOPPING)
 		{
-			brokenLamps.clear();
-            resetLampStatuses();
+			spawnedLamps.clear();
+			if (gameStateChanged.getGameState() != GameState.LOADING)
+			{
+				brokenLamps.clear();
+				resetLampStatuses();
+			}
 		}
 	}
 
@@ -121,40 +155,60 @@ public class DKLampsPlugin extends Plugin
 			if (!brokenLamps.isEmpty())
 			{
 				brokenLamps = Collections.emptySet();
-                client.clearHintArrow();
+				client.clearHintArrow();
 			}
 			return;
 		}
 
 		int lampVarbit = client.getVarbitValue(DORGESHKAAN_LAMPS_VARBIT);
 		brokenLamps = DKLampsHelper.getBrokenLamps(lampVarbit);
-        
-        // Update lamp statuses
-		for (Lamp lamp : DKLampsHelper.getLampsByArea(currentArea))
+
+		// Check if a lamp was fixed this tick
+		if (previouslyBrokenLamps.size() > brokenLamps.size())
 		{
-			if (brokenLamps.contains(lamp))
+			// If so, reset the status of lamps in other areas that were thought to be fixed
+			for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
 			{
-				lampStatuses.put(lamp, LampStatus.BROKEN);
-			}
-			else
-			{
-				lampStatuses.put(lamp, LampStatus.FIXED);
+				Lamp lamp = entry.getKey();
+				LampStatus status = entry.getValue();
+
+				if (lamp.getArea() != currentArea && status == LampStatus.FIXED)
+				{
+					lampStatuses.put(lamp, LampStatus.UNKNOWN);
+				}
 			}
 		}
 
-		panel.updateLamps();
+		// Update statuses for the current area
+		for (Lamp lamp : DKLampsHelper.getLampsByArea(currentArea))
+		{
+			lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.FIXED);
+		}
 
-        if (config.showHintArrow())
-        {
-            updateHintArrow();
-        }
-        else
-        {
-            client.clearHintArrow();
-        }
+		if (panel.isVisible())
+		{
+			panel.update();
+		}
+
+		if (config.showHintArrow())
+		{
+			updateHintArrow();
+		}
+		else
+		{
+			client.clearHintArrow();
+		}
+
+		// Update the set for the next tick's comparison
+		previouslyBrokenLamps = new HashSet<>(brokenLamps);
 	}
 
-    private void updateHintArrow()
+	public void setHintArrow(Lamp lamp)
+	{
+		client.setHintArrow(lamp.getWorldPoint());
+	}
+
+	private void updateHintArrow()
 	{
 		if (brokenLamps.isEmpty())
 		{
@@ -185,4 +239,15 @@ public class DKLampsPlugin extends Plugin
 	{
 		return configManager.getConfig(DKLampsConfig.class);
 	}
+
+    public DKLampsConfig getConfig()
+	{
+		return config;
+	}
+
+    public Client getClient()
+    {
+        return client;
+    }
+
 }

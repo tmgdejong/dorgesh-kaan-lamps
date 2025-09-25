@@ -1,58 +1,42 @@
 package com.dklamps;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.GridLayout;
-import java.util.EnumMap;
-import java.util.Map;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
+import javax.swing.BoxLayout;
 import net.runelite.client.ui.PluginPanel;
 
 public class DKLampsPanel extends PluginPanel
 {
-	private final DKLampsPlugin plugin;
-	private final Map<Lamp, JLabel> lampLabels = new EnumMap<>(Lamp.class);
+    private final DKLampsPlugin plugin;
+	private final CollapsibleMapPanel floor0;
+	private final CollapsibleMapPanel floor1;
+	private final CollapsibleMapPanel floor2;
 
 	DKLampsPanel(DKLampsPlugin plugin)
 	{
-		super();
-		this.plugin = plugin;
+		super(false);
+        this.plugin = plugin;
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-		setBorder(new EmptyBorder(10, 10, 10, 10));
-		setLayout(new BorderLayout());
+		floor0 = new CollapsibleMapPanel(new MapPanel(plugin, 0, "Ground Floor"));
+		floor1 = new CollapsibleMapPanel(new MapPanel(plugin, 1, "First Floor"));
+		floor2 = new CollapsibleMapPanel(new MapPanel(plugin, 2, "Second Floor"));
 
-		JPanel titlePanel = new JPanel();
-		titlePanel.setBorder(new EmptyBorder(0, 0, 10, 0));
-		titlePanel.setLayout(new BorderLayout());
-
-		JLabel title = new JLabel("Dorgesh-Kaan Lamps");
-		title.setForeground(Color.WHITE);
-		titlePanel.add(title, BorderLayout.NORTH);
-		add(titlePanel, BorderLayout.NORTH);
-
-		JPanel lampGridPanel = new JPanel(new GridLayout(0, 5, 5, 5));
-		for (Lamp lamp : Lamp.values())
-		{
-			JLabel lampLabel = new JLabel("?");
-			lampLabel.setOpaque(true);
-			lampLabel.setHorizontalAlignment(JLabel.CENTER);
-			lampLabel.setToolTipText(lamp.getDescription());
-			lampLabels.put(lamp, lampLabel);
-			lampGridPanel.add(lampLabel);
-		}
-		add(lampGridPanel, BorderLayout.CENTER);
+		add(floor0);
+		add(floor1);
+		add(floor2);
 	}
 
-	public void updateLamps()
+	public void update()
 	{
-		for (Map.Entry<Lamp, JLabel> entry : lampLabels.entrySet())
+		int currentPlane = -1;
+		if (plugin.getClient().getLocalPlayer() != null)
 		{
-			Lamp lamp = entry.getKey();
-			JLabel label = entry.getValue();
-			LampStatus status = plugin.getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
-			label.setBackground(status.getColor());
+			currentPlane = plugin.getClient().getLocalPlayer().getWorldLocation().getPlane();
 		}
+
+		if (currentPlane == 0) floor0.expand(); else floor0.collapse();
+		if (currentPlane == 1) floor1.expand(); else floor1.collapse();
+		if (currentPlane == 2) floor2.expand(); else floor2.collapse();
+
+		repaint();
 	}
 }

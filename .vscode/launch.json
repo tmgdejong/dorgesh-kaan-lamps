@@ -6,11 +6,12 @@
     "configurations": [
         {
             "type": "java",
-            "name": "DorgeshKaanLampsPluginTest",
+            "name": "DKLampsPluginTest",
             "request": "launch",
-            "mainClass": "com.dorgeshkaanlamps.DorgeshKaanLampsPluginTest",
+            "mainClass": "com.dklamps.DKLampsPluginTest",
             "projectName": "dorgesh-kaan-lamps",
-            "vmArgs": "-ea"
+            "vmArgs": "-ea",
+            "args": "--developer-mode --debug"
         },
         {
             "type": "java",
