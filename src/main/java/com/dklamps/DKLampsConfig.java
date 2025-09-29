@@ -4,6 +4,7 @@ import java.awt.Color;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 
 @ConfigGroup("dorgeshkaanlamps")
@@ -102,16 +103,77 @@ public interface DKLampsConfig extends Config
 		return 2;
 	}
 
-	@ConfigItem(
-		keyName = "resetLampStatuses",
-		name = "Reset Lamp Statuses",
-		description = "Clears the status of all lamps, setting them to 'Unknown'.",
-		position = 100
+    @ConfigSection(
+        name = "Hints",
+        description = "Settings for additional hints.",
+        position = 98
 	)
-	default boolean resetLampStatuses()
+	String hintsSection = "hintsSection";
+
+	@ConfigItem(
+		keyName = "highlightDoors",
+		name = "Highlight Closed Doors",
+		description = "Highlight closed doors in Dorgesh-Kaan.",
+		section = hintsSection
+	)
+	default boolean highlightDoors()
 	{
 		return false;
 	}
 
+	@ConfigItem(
+		keyName = "doorHighlightColor",
+		name = "Door Highlight Color",
+		description = "The color to highlight closed doors.",
+		section = hintsSection
+	)
+	default Color doorHighlightColor()
+	{
+		return Color.YELLOW;
+	}
 
+	@ConfigItem(
+		keyName = "highlightStairs",
+		name = "Highlight Stairs/Ladders",
+		description = "Highlight stairs and ladders in Dorgesh-Kaan.",
+		section = hintsSection
+	)
+	default boolean highlightStairs()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "stairHighlightColor",
+		name = "Stair/Ladder Highlight Color",
+		description = "The color to highlight stairs and ladders.",
+		section = hintsSection
+	)
+	default Color stairHighlightColor()
+	{
+		return Color.CYAN;
+	}
+
+	@ConfigItem(
+		keyName = "highlightWireMachine",
+		name = "Highlight Wire Machine",
+		description = "Highlight the wire machine and show a respawn timer.",
+		position = 99,
+        section = hintsSection
+	)
+	default boolean highlightWireMachine()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "wireMachineHighlightColor",
+		name = "Wire Machine Color",
+		description = "The color to highlight the wire machine.",
+        section = hintsSection
+	)
+	default Color wireMachineHighlightColor()
+	{
+		return Color.ORANGE;
+	}
 }

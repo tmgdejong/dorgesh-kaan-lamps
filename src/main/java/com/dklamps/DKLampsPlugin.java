@@ -2,6 +2,7 @@ package com.dklamps;
 
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -11,23 +12,27 @@ import java.util.Set;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
+import static com.dklamps.ObjectIDs.DOOR_IDS;
+import static com.dklamps.ObjectIDs.STAIR_IDS;
+import static com.dklamps.ObjectIDs.WIRE_MACHINE_ID;
 
 @Slf4j
 @PluginDescriptor(
@@ -36,15 +41,13 @@ import net.runelite.client.util.ImageUtil;
 public class DKLampsPlugin extends Plugin
 {
 	private static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
+	private static final int WIRE_RESPAWN_SECONDS = 5;
 
 	@Inject
 	private Client client;
 
 	@Inject
 	private DKLampsConfig config;
-
-    @Inject
-	private ConfigManager configManager;
 
     @Inject
 	private OverlayManager overlayManager;
@@ -60,11 +63,19 @@ public class DKLampsPlugin extends Plugin
 
     @Getter
 	private final Map<WorldPoint, GameObject> spawnedLamps = new HashMap<>();
+    @Getter
+	private final Set<GameObject> doors = new HashSet<>();
+	@Getter
+	private final Set<GameObject> stairs = new HashSet<>();
+	@Getter
+	private GameObject wireMachine;
 
 	@Getter
 	private Set<Lamp> brokenLamps = new HashSet<>();
-    private Set<Lamp> previouslyBrokenLamps = new HashSet<>();
+	private Set<Lamp> previouslyBrokenLamps = new HashSet<>();
 	private Area lastArea = null;
+	@Getter
+	private Instant wireRespawnTime;
 
     @Getter
 	private final Map<Lamp, LampStatus> lampStatuses = new EnumMap<>(Lamp.class);
@@ -95,6 +106,9 @@ public class DKLampsPlugin extends Plugin
 		clientToolbar.removeNavigation(navButton);
 		brokenLamps.clear();
 		client.clearHintArrow();
+        doors.clear();
+		stairs.clear();
+		wireMachine = null;
 	}
 
     private void resetLampStatuses()
@@ -114,6 +128,18 @@ public class DKLampsPlugin extends Plugin
 		{
 			spawnedLamps.put(gameObject.getWorldLocation(), gameObject);
 		}
+        else if (DOOR_IDS.contains(gameObject.getId()))
+		{
+			doors.add(gameObject);
+		}
+		else if (STAIR_IDS.contains(gameObject.getId()))
+		{
+			stairs.add(gameObject);
+		}
+		else if (gameObject.getId() == WIRE_MACHINE_ID)
+		{
+			wireMachine = gameObject;
+		}
 	}
 
 	@Subscribe
@@ -123,6 +149,18 @@ public class DKLampsPlugin extends Plugin
 		if (DKLampsHelper.isLamp(gameObject.getId()))
 		{
 			spawnedLamps.remove(gameObject.getWorldLocation());
+		}
+        else if (DOOR_IDS.contains(gameObject.getId()))
+		{
+			doors.remove(gameObject);
+		}
+		else if (STAIR_IDS.contains(gameObject.getId()))
+		{
+			stairs.remove(gameObject);
+		}
+		else if (gameObject.getId() == WIRE_MACHINE_ID)
+		{
+			wireMachine = null;
 		}
 	}
 
@@ -134,11 +172,24 @@ public class DKLampsPlugin extends Plugin
 			gameStateChanged.getGameState() == GameState.HOPPING)
 		{
 			spawnedLamps.clear();
+            doors.clear();
+			stairs.clear();
+			wireMachine = null;
+
 			if (gameStateChanged.getGameState() != GameState.LOADING)
 			{
 				brokenLamps.clear();
 				resetLampStatuses();
 			}
+		}
+	}
+
+    @Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		if (event.getType() == ChatMessageType.SPAM && event.getMessage().equals("You take a coil of wire from the machine."))
+		{
+			wireRespawnTime = Instant.now().plusSeconds(WIRE_RESPAWN_SECONDS);
 		}
 	}
 
@@ -225,24 +276,6 @@ public class DKLampsPlugin extends Plugin
 		// Update state for the next tick
 		previouslyBrokenLamps = new HashSet<>(brokenLamps);
 		lastArea = currentArea;
-	}
-
-	@Subscribe
-	public void onConfigChanged(ConfigChanged event)
-	{
-		if (event.getGroup().equals("dorgeshkaanlamps") && event.getKey().equals("resetLampStatuses"))
-		{
-			if (config.resetLampStatuses())
-			{
-				log.info("Resetting lamp statuses");
-				resetLampStatuses();
-				configManager.setConfiguration("dorgeshkaanlamps", "resetLampStatuses", false);
-				if (panel.isVisible())
-				{
-					panel.update();
-				}
-			}
-		}
 	}
 
 	public void setHintArrow(Lamp lamp)

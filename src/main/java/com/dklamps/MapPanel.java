@@ -43,7 +43,7 @@ public class MapPanel extends JPanel
 		setLayout(new BorderLayout());
 
 		JLabel titleLabel = new JLabel(title, JLabel.CENTER);
-		add(titleLabel, BorderLayout.NORTH);
+		// add(titleLabel, BorderLayout.NORTH);
 
 		JPanel mapDisplay = new MapDisplay();
 		add(mapDisplay, BorderLayout.CENTER);
@@ -88,7 +88,7 @@ public class MapPanel extends JPanel
 				return new Dimension(0, 0);
 			}
 			// Calculate width to maintain aspect ratio based on available height
-			int panelHeight = getParent().getHeight() - 10;
+			int panelHeight = getParent().getHeight();
 			if (panelHeight <= 0)
 			{
 				// Estimate a reasonable height if not yet rendered
