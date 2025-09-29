@@ -12,12 +12,12 @@ import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.List;
-import lombok.Getter;
 import java.util.stream.Collectors;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.ImageUtil;
 
 @Slf4j
@@ -31,39 +31,21 @@ public class MapPanel extends JPanel
 	@Getter
 	private final String title;
 	private final List<Lamp> lampsOnThisFloor;
-	private final BufferedImage scaledMapImage;
+	private final BufferedImage mapImage;
 
 	MapPanel(DKLampsPlugin plugin, int plane, String title)
 	{
 		this.plugin = plugin;
 		this.plane = plane;
 		this.title = title;
+		this.mapImage = ImageUtil.loadImageResource(getClass(), "/map_p" + plane + ".png");
 
 		setLayout(new BorderLayout());
 
-		BufferedImage mapImage = ImageUtil.loadImageResource(getClass(), "/map_p" + plane + ".png");
-
-		if (mapImage != null)
-		{
-			int panelWidth = PluginPanel.PANEL_WIDTH;
-			double scale = (double) panelWidth / mapImage.getWidth();
-			int newHeight = (int) (mapImage.getHeight() * scale);
-			scaledMapImage = new BufferedImage(panelWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
-			Graphics2D g = scaledMapImage.createGraphics();
-			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-			g.drawImage(mapImage, 0, 0, panelWidth, newHeight, null);
-			g.dispose();
-		}
-		else
-		{
-			scaledMapImage = null;
-		}
+		JLabel titleLabel = new JLabel(title, JLabel.CENTER);
+		add(titleLabel, BorderLayout.NORTH);
 
 		JPanel mapDisplay = new MapDisplay();
-		if (scaledMapImage != null)
-		{
-			mapDisplay.setPreferredSize(new Dimension(scaledMapImage.getWidth(), scaledMapImage.getHeight()));
-		}
 		add(mapDisplay, BorderLayout.CENTER);
 
 		this.lampsOnThisFloor = Arrays.stream(Lamp.values())
@@ -99,13 +81,37 @@ public class MapPanel extends JPanel
 		}
 
 		@Override
+		public Dimension getPreferredSize()
+		{
+			if (mapImage == null)
+			{
+				return new Dimension(0, 0);
+			}
+			// Calculate width to maintain aspect ratio based on available height
+			int panelHeight = getParent().getHeight() - 10;
+			if (panelHeight <= 0)
+			{
+				// Estimate a reasonable height if not yet rendered
+				panelHeight = 200;
+			}
+			double scale = (double) panelHeight / mapImage.getHeight();
+			int panelWidth = getParent().getWidth();
+			if (panelWidth <= 0)
+			{
+				panelWidth = (int) (mapImage.getWidth() * scale);
+			}
+			return new Dimension(panelWidth, panelHeight);
+		}
+
+
+		@Override
 		protected void paintComponent(Graphics g)
 		{
 			super.paintComponent(g);
 
-			if (scaledMapImage == null) return;
-			g.drawImage(scaledMapImage, 0, 0, this.getWidth(), this.getHeight(), null);
-
+			if (mapImage == null) return;
+			// Draw the map scaled to the component's current size
+			g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null);
 
 			if (plugin.getClient().getLocalPlayer() != null &&
 				plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() == plane)
@@ -122,18 +128,18 @@ public class MapPanel extends JPanel
 				LampStatus status = plugin.getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
 
 				Color color;
-                if (status == LampStatus.BROKEN)
-                {
-                    color = plugin.getConfig().getBrokenLampColor();
-                }
-                else if (status == LampStatus.FIXED && plugin.getConfig().showKnownWorkingLamps())
-                {
-                    color = plugin.getConfig().getWorkingLampColor();
-                }
-                else
-                {
-                    color = plugin.getConfig().getDefaultLampColor();
-                }
+				if (status == LampStatus.BROKEN)
+				{
+					color = plugin.getConfig().getBrokenLampColor();
+				}
+				else if (status == LampStatus.FIXED && plugin.getConfig().showKnownWorkingLamps())
+				{
+					color = plugin.getConfig().getWorkingLampColor();
+				}
+				else
+				{
+					color = plugin.getConfig().getDefaultLampColor();
+				}
 
 				g2d.setColor(color);
 				Ellipse2D.Double circle = getLampCircle(lamp);

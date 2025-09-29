@@ -15,4 +15,18 @@ public enum Area
     P2_S("South Third Floor");
 
     private final String name;
+
+    public Area getOpposite()
+    {
+        switch (this)
+        {
+            case P0_N: return P0_S;
+            case P0_S: return P0_N;
+            case P1_N: return P1_S;
+            case P1_S: return P1_N;
+            case P2_N: return P2_S;
+            case P2_S: return P2_N;
+            default: return null;
+        }
+    }
 }

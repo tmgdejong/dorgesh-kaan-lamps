@@ -2,7 +2,6 @@ package com.dklamps;
 
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -22,6 +21,7 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.NavigationButton;
@@ -36,14 +36,15 @@ import net.runelite.client.util.ImageUtil;
 public class DKLampsPlugin extends Plugin
 {
 	private static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
-    private static final int WORKING_LAMP_ID = 22976;
-	private static final int BROKEN_LAMP_ID = 22977;
 
 	@Inject
 	private Client client;
 
 	@Inject
 	private DKLampsConfig config;
+
+    @Inject
+	private ConfigManager configManager;
 
     @Inject
 	private OverlayManager overlayManager;
@@ -63,7 +64,7 @@ public class DKLampsPlugin extends Plugin
 	@Getter
 	private Set<Lamp> brokenLamps = new HashSet<>();
     private Set<Lamp> previouslyBrokenLamps = new HashSet<>();
-
+	private Area lastArea = null;
 
     @Getter
 	private final Map<Lamp, LampStatus> lampStatuses = new EnumMap<>(Lamp.class);
@@ -152,37 +153,59 @@ public class DKLampsPlugin extends Plugin
 		Area currentArea = DKLampsHelper.getArea(client.getLocalPlayer().getWorldLocation());
 		if (currentArea == null)
 		{
-			if (!brokenLamps.isEmpty())
-			{
-				brokenLamps = Collections.emptySet();
-				client.clearHintArrow();
-			}
+			lastArea = null;
+            client.clearHintArrow();
+			return;
+		}
+
+		// If the player has just entered a new area, do nothing this tick.
+		// Update lastArea and wait for the next tick to ensure varbits are synced.
+		if (!currentArea.equals(lastArea))
+		{
+			lastArea = currentArea;
+            previouslyBrokenLamps = new HashSet<>();
 			return;
 		}
 
 		int lampVarbit = client.getVarbitValue(DORGESHKAAN_LAMPS_VARBIT);
-		brokenLamps = DKLampsHelper.getBrokenLamps(lampVarbit);
+		brokenLamps = DKLampsHelper.getBrokenLamps(lampVarbit, currentArea);
 
-		// Check if a lamp was fixed this tick
-		if (previouslyBrokenLamps.size() > brokenLamps.size())
+        log.info("{} Broken lamps: {}", brokenLamps.size(), brokenLamps);
+        log.info("{} Previously broken lamps: {}", previouslyBrokenLamps.size(), previouslyBrokenLamps);
+
+		Set<Lamp> fixedLamps = new HashSet<>(previouslyBrokenLamps);
+		fixedLamps.removeAll(brokenLamps);
+
+		if (!fixedLamps.isEmpty())
 		{
-			// If so, reset the status of lamps in other areas that were thought to be fixed
+			// A lamp was fixed. Reset other Fixed lamps to Unknown.
+			Area oppositeArea = currentArea.getOpposite();
 			for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
 			{
-				Lamp lamp = entry.getKey();
-				LampStatus status = entry.getValue();
-
-				if (lamp.getArea() != currentArea && status == LampStatus.FIXED)
+				Area lampArea = entry.getKey().getArea();
+				if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.FIXED)
 				{
-					lampStatuses.put(lamp, LampStatus.UNKNOWN);
+					lampStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
 				}
 			}
 		}
 
-		// Update statuses for the current area
-		for (Lamp lamp : DKLampsHelper.getLampsByArea(currentArea))
+		// Update statuses for the current area with fresh data
+		Set<Lamp> lampsInCurrentArea = DKLampsHelper.getLampsByArea(currentArea);
+		for (Lamp lamp : lampsInCurrentArea)
 		{
 			lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.FIXED);
+		}
+
+		// Also update statuses for the opposite area
+		Area oppositeArea = currentArea.getOpposite();
+		if (oppositeArea != null)
+		{
+			Set<Lamp> validOppositeLamps = DKLampsHelper.getValidOppositeLamps(currentArea);
+			for (Lamp lamp : validOppositeLamps)
+			{
+				lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.FIXED);
+			}
 		}
 
 		if (panel.isVisible())
@@ -199,8 +222,27 @@ public class DKLampsPlugin extends Plugin
 			client.clearHintArrow();
 		}
 
-		// Update the set for the next tick's comparison
+		// Update state for the next tick
 		previouslyBrokenLamps = new HashSet<>(brokenLamps);
+		lastArea = currentArea;
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (event.getGroup().equals("dorgeshkaanlamps") && event.getKey().equals("resetLampStatuses"))
+		{
+			if (config.resetLampStatuses())
+			{
+				log.info("Resetting lamp statuses");
+				resetLampStatuses();
+				configManager.setConfiguration("dorgeshkaanlamps", "resetLampStatuses", false);
+				if (panel.isVisible())
+				{
+					panel.update();
+				}
+			}
+		}
 	}
 
 	public void setHintArrow(Lamp lamp)

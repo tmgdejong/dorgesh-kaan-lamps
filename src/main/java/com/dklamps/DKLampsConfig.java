@@ -101,4 +101,17 @@ public interface DKLampsConfig extends Config
 	{
 		return 2;
 	}
+
+	@ConfigItem(
+		keyName = "resetLampStatuses",
+		name = "Reset Lamp Statuses",
+		description = "Clears the status of all lamps, setting them to 'Unknown'.",
+		position = 100
+	)
+	default boolean resetLampStatuses()
+	{
+		return false;
+	}
+
+
 }

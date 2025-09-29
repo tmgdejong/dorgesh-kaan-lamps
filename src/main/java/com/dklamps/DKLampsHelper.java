@@ -94,21 +94,9 @@ public class DKLampsHelper
 		return null;
 	}
 
-	public static Set<Lamp> getBrokenLamps(int varbitValue)
+    public static Lamp getLamp(int objectId)
 	{
-		Set<Lamp> brokenLamps = Sets.newEnumSet(Collections.emptySet(), Lamp.class);
-		for (int i = 0; i < 32; i++)
-		{
-			if ((varbitValue & (1 << i)) != 0)
-			{
-				Set<Lamp> lamps = LAMPS_BY_BIT_POSITION.get(i);
-				if (lamps != null)
-				{
-					brokenLamps.addAll(lamps);
-				}
-			}
-		}
-		return brokenLamps;
+		return LAMPS_BY_OBJECT_ID.get(objectId);
 	}
 
 	public static Lamp getLamp(WorldPoint worldPoint)
@@ -128,8 +116,86 @@ public class DKLampsHelper
 		return LAMPS_BY_OBJECT_ID.containsKey(objectId);
 	}
 
-	public static Lamp getLamp(int objectId)
+	public static Set<Lamp> getBrokenLamps(int varbitValue)
 	{
-		return LAMPS_BY_OBJECT_ID.get(objectId);
+		Set<Lamp> brokenLamps = Sets.newEnumSet(Collections.emptySet(), Lamp.class);
+		for (int i = 0; i < 32; i++)
+		{
+			if ((varbitValue & (1 << i)) != 0)
+			{
+				Set<Lamp> lamps = LAMPS_BY_BIT_POSITION.get(i);
+				if (lamps != null)
+				{
+					brokenLamps.addAll(lamps);
+				}
+			}
+		}
+		return brokenLamps;
 	}
+
+	public static Set<Lamp> getBrokenLamps(int varbitValue, Area currentArea)
+	{
+		Set<Lamp> brokenLamps = Sets.newEnumSet(Collections.emptySet(), Lamp.class);
+		if (currentArea == null)
+		{
+			return getBrokenLamps(varbitValue);
+		}
+
+		Area oppositeArea = currentArea.getOpposite();
+
+		Set<Lamp> lampsInCurrentArea = getLampsByArea(currentArea);
+		Set<Lamp> lampsInOppositeArea = getLampsByArea(oppositeArea);
+
+		int maxBitPosition = lampsInCurrentArea.stream()
+			.mapToInt(Lamp::getBitPosition)
+			.max()
+			.orElse(0);
+
+		for (int i = 0; i <= maxBitPosition; i++)
+		{
+			if ((varbitValue & (1 << i)) != 0)
+			{
+				final int bit = i;
+				Lamp lamp = lampsInCurrentArea.stream()
+					.filter(l -> l.getBitPosition() == bit)
+					.findFirst()
+					.orElse(lampsInOppositeArea.stream()
+						.filter(l -> l.getBitPosition() == bit)
+						.findFirst()
+						.orElse(null));
+
+				if (lamp != null)
+				{
+					brokenLamps.add(lamp);
+				}
+			}
+		}
+
+		return brokenLamps;
+	}
+
+    public static Set<Lamp> getValidOppositeLamps(Area currentArea)
+    {
+        Area oppositeArea = currentArea.getOpposite();
+        if (oppositeArea == null)
+        {
+            return Collections.emptySet();
+        }
+
+        Set<Lamp> lampsInOppositeArea = getLampsByArea(oppositeArea);
+        Set<Lamp> lampsInCurrentArea = getLampsByArea(currentArea);
+
+        int maxBitPosition = lampsInCurrentArea.stream()
+            .mapToInt(Lamp::getBitPosition)
+            .max()
+            .orElse(0);
+
+        Set<Integer> currentAreaBitPositions = lampsInCurrentArea.stream()
+            .map(Lamp::getBitPosition)
+            .collect(Collectors.toSet());
+
+        return lampsInOppositeArea.stream()
+            .filter(lamp -> lamp.getBitPosition() <= maxBitPosition && !currentAreaBitPositions.contains(lamp.getBitPosition()))
+            .collect(Collectors.toSet());
+    }
 }
