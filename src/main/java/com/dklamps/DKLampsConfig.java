@@ -12,19 +12,65 @@ public interface DKLampsConfig extends Config
 {
 
     @ConfigItem(
-		keyName = "defaultLampColor",
-		name = "Default Lamp Color",
-		description = "The default color for lamps."
+        keyName = "showHintArrow",
+        name = "Show Hint Arrow",
+        description = "Show a hint arrow pointing to the nearest broken lamp.",
+        position = 1
+    )
+    default boolean showHintArrow()
+    {
+        return true;
+    }
+
+    @ConfigSection(
+        name = "Highlight Lamps",
+        description = "Settings for highlighting Dorgesh-Kaan lamps.",
+        position = 10
 	)
-	default Color getDefaultLampColor()
+	String lampsSection = "lampsSection";
+
+    @ConfigItem(
+		keyName = "highlightBrokenLamps",
+		name = "Broken Lamps",
+		description = "Highlight known broken lamps.",
+        section = lampsSection,
+        position = 1
+	)
+	default boolean highlightBrokenLamps()
 	{
-		return Color.GRAY;
+		return true;
 	}
 
-	@ConfigItem(
+    @ConfigItem(
+		keyName = "highlightWorkingLamps",
+		name = "Working Lamps",
+		description = "Highlight known working lamps.",
+        section = lampsSection,
+        position = 2
+	)
+	default boolean highlightWorkingLamps()
+	{
+		return false;
+	}
+
+    @ConfigItem(
+		keyName = "highlightAllLamps",
+		name = "All Lamps",
+		description = "Highlight all lamps.",
+        section = lampsSection,
+        position = 3
+	)
+	default boolean highlightAllLamps()
+	{
+		return false;
+	}
+
+    @ConfigItem(
 		keyName = "brokenLampColor",
 		name = "Broken Lamp Color",
-		description = "The color of the overlay for broken lamps."
+		description = "The color of the overlay for broken lamps.",
+        section = lampsSection,
+        position = 4
 	)
 	default Color getBrokenLampColor()
 	{
@@ -34,7 +80,9 @@ public interface DKLampsConfig extends Config
     @ConfigItem(
 		keyName = "workingLampColor",
 		name = "Working Lamp Color",
-		description = "The color of the overlay for working lamps."
+		description = "The color of the overlay for working lamps.",
+        section = lampsSection,
+        position = 5
 	)
 	default Color getWorkingLampColor()
 	{
@@ -42,50 +90,160 @@ public interface DKLampsConfig extends Config
 	}
 
     @ConfigItem(
-        keyName = "showHintArrow",
-        name = "Show Hint Arrow",
-        description = "Show a hint arrow pointing to the nearest broken lamp."
+		keyName = "defaultLampColor",
+		name = "Default Lamp Color",
+		description = "The default color of the overlay for lamps.",
+        section = lampsSection,
+        position = 6
+	)
+	default Color getDefaultLampColor()
+	{
+		return Color.GRAY;
+	}
+
+    @ConfigItem(
+		keyName = "highlightAllPlanesLamps",
+		name = "All Planes",
+		description = "Highlight all lamps on all planes.",
+        section = lampsSection,
+        position = 7
+	)
+	default boolean highlightAllPlanesLamps()
+	{
+		return false;
+	}
+
+    // @Range(min = 0, max = 100)
+    // @ConfigItem(
+	// 	keyName = "ColourChangePerPlane",
+	// 	name = "Colour Change Per Plane",
+	// 	description = "Set the opacity for lamps on other planes.",
+    //     section = lampsSection,
+    //     position = 8
+	// )
+	// default int colourChangePerPlane()
+	// {
+	// 	return 25;
+	// }
+
+
+    @ConfigSection(
+        name = "Hints",
+        description = "Settings for additional hints.",
+        position = 98
+	)
+	String hintsSection = "hintsSection";
+
+    @ConfigItem(
+		keyName = "highlightWireMachine",
+		name = "Highlight Wire Machine",
+		description = "Highlight the wire machine and show a respawn timer.",
+        section = hintsSection,
+		position = 1
+	)
+	default boolean highlightWireMachine()
+	{
+		return true;
+	}
+
+    @ConfigItem(
+        keyName = "timerType",
+        name = "Timer Display Type",
+        description = "The UI style for displaying the respawn timer on the wire machine.",
+        section = hintsSection,
+		position = 2
     )
-    default boolean showHintArrow()
-    {
-        return true;
+    default TimerTypes timerType() {
+        return TimerTypes.PIE;
     }
 
-    @ConfigItem(
-		keyName = "showAllLamps",
-		name = "Show All Lamps",
-		description = "Show overlays for all lamps."
+	@ConfigItem(
+		keyName = "highlightClosedDoors",
+		name = "Closed Doors",
+		description = "Highlight closed doors in Dorgesh-Kaan.",
+		section = hintsSection,
+        position = 10
 	)
-	default boolean showAllLamps()
+	default boolean highlightClosedDoors()
 	{
 		return false;
 	}
 
     @ConfigItem(
-		keyName = "showKnownWorkingLamps",
-		name = "Show Known Working Lamps",
-		description = "Also show overlays and map markers for known working lamps."
+		keyName = "highlightStairs",
+		name = "Highlight Stairs/Ladders",
+		description = "Highlight stairs and ladders in Dorgesh-Kaan.",
+		section = hintsSection,
+        position = 20
 	)
-	default boolean showKnownWorkingLamps()
+	default boolean highlightStairs()
 	{
 		return false;
 	}
+
+    @ConfigItem(
+		keyName = "wireMachineHighlightColor",
+		name = "Wire Machine Color",
+		description = "The color to highlight the wire machine.",
+        section = hintsSection,
+        position = 100
+	)
+	default Color wireMachineHighlightColor()
+	{
+		return Color.ORANGE;
+	}
+
+	@ConfigItem(
+		keyName = "doorHighlightColor",
+		name = "Door Highlight Color",
+		description = "The color to highlight closed doors.",
+		section = hintsSection,
+        position = 110
+	)
+	default Color doorHighlightColor()
+	{
+		return Color.YELLOW;
+	}
+
+	@ConfigItem(
+		keyName = "stairHighlightColor",
+		name = "Stair/Ladder Highlight Color",
+		description = "The color to highlight stairs and ladders.",
+		section = hintsSection,
+        position = 120
+	)
+	default Color stairHighlightColor()
+	{
+		return Color.CYAN;
+	}
+
+
+    @ConfigSection(
+        name = "Highlight Style",
+        description = "Settings for highlight style.",
+        position = 99
+    )
+    String highlightStyleSection = "highlightStyleSection";
 
     @ConfigItem(
         keyName = "highlightStyle",
         name = "Highlight Style",
-        description = "Choose how to highlight lamps."
+        description = "Choose how to highlight lamps.",
+        section = highlightStyleSection,
+        position = 1
     )
     default HighlightStyle highlightStyle()
     {
         return HighlightStyle.HIGHLIGHT_CLICKBOX;
     }
 
-	@Range(min = 0, max = 4)
+    @Range(min = 0, max = 4)
 	@ConfigItem(
 		keyName = "borderFeather",
 		name = "Border Feather",
-		description = "The feathering amount for the border highlight."
+		description = "The feathering amount for the border highlight.",
+        section = highlightStyleSection,
+        position = 2
 	)
 	default int borderFeather()
 	{
@@ -96,84 +254,12 @@ public interface DKLampsConfig extends Config
 	@ConfigItem(
 		keyName = "borderThickness",
 		name = "Border Thickness",
-		description = "The thickness of the border highlight."
+		description = "The thickness of the border highlight.",
+        section = highlightStyleSection,
+        position = 3
 	)
 	default int borderThickness()
 	{
 		return 2;
-	}
-
-    @ConfigSection(
-        name = "Hints",
-        description = "Settings for additional hints.",
-        position = 98
-	)
-	String hintsSection = "hintsSection";
-
-	@ConfigItem(
-		keyName = "highlightDoors",
-		name = "Highlight Closed Doors",
-		description = "Highlight closed doors in Dorgesh-Kaan.",
-		section = hintsSection
-	)
-	default boolean highlightDoors()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "doorHighlightColor",
-		name = "Door Highlight Color",
-		description = "The color to highlight closed doors.",
-		section = hintsSection
-	)
-	default Color doorHighlightColor()
-	{
-		return Color.YELLOW;
-	}
-
-	@ConfigItem(
-		keyName = "highlightStairs",
-		name = "Highlight Stairs/Ladders",
-		description = "Highlight stairs and ladders in Dorgesh-Kaan.",
-		section = hintsSection
-	)
-	default boolean highlightStairs()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "stairHighlightColor",
-		name = "Stair/Ladder Highlight Color",
-		description = "The color to highlight stairs and ladders.",
-		section = hintsSection
-	)
-	default Color stairHighlightColor()
-	{
-		return Color.CYAN;
-	}
-
-	@ConfigItem(
-		keyName = "highlightWireMachine",
-		name = "Highlight Wire Machine",
-		description = "Highlight the wire machine and show a respawn timer.",
-		position = 99,
-        section = hintsSection
-	)
-	default boolean highlightWireMachine()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "wireMachineHighlightColor",
-		name = "Wire Machine Color",
-		description = "The color to highlight the wire machine.",
-        section = hintsSection
-	)
-	default Color wireMachineHighlightColor()
-	{
-		return Color.ORANGE;
 	}
 }

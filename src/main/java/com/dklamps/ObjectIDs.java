@@ -10,12 +10,13 @@ public final class ObjectIDs
 		// Private constructor to prevent instantiation
 	}
 
-	public static final int WIRE_MACHINE_ID = 22730;
+    public static final Set<Integer> WIRE_MACHINE_IDS = ImmutableSet.of(
+        22730,
+        22731
+    );
 
 	public static final Set<Integer> DOOR_IDS = ImmutableSet.of(
-        22913,
         22914,
-        22920,
         22921
 
 	);

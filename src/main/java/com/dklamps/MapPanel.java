@@ -132,7 +132,7 @@ public class MapPanel extends JPanel
 				{
 					color = plugin.getConfig().getBrokenLampColor();
 				}
-				else if (status == LampStatus.FIXED && plugin.getConfig().showKnownWorkingLamps())
+				else if (status == LampStatus.FIXED)
 				{
 					color = plugin.getConfig().getWorkingLampColor();
 				}

@@ -1,24 +1,34 @@
 package com.dklamps;
 
+import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Composite;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.time.Instant;
 import java.time.Duration;
 import javax.inject.Inject;
+
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.Point;
+import net.runelite.api.TileObject;
+import net.runelite.api.WallObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayUtil;
+import net.runelite.client.ui.overlay.components.ProgressPieComponent;
 import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
+@Slf4j
 public class DKLampsOverlay extends Overlay
 {
+	private static final int WIRE_RESPAWN_TICKS = 8;
+
 	private final Client client;
 	private final DKLampsPlugin plugin;
 	private final DKLampsConfig config;
@@ -45,15 +55,15 @@ public class DKLampsOverlay extends Overlay
 
 		renderLamps(graphics);
 
-        if (config.highlightDoors())
+        if (config.highlightClosedDoors())
         {
-            for (GameObject door : plugin.getDoors())
+            for (WallObject door : plugin.getDoors())
             {
-                if (door.getPlane() != client.getPlane())
+                if (door.getPlane() != client.getTopLevelWorldView().getPlane())
                 {
                     continue;
                 }
-                renderGameObject(door, config.doorHighlightColor(), graphics);
+                renderTileObject(door, config.doorHighlightColor(), graphics);
             }
         }
 
@@ -61,73 +71,91 @@ public class DKLampsOverlay extends Overlay
         {
             for (GameObject stair : plugin.getStairs())
             {
-                if (stair.getPlane() != client.getPlane())
+                if (stair.getPlane() != client.getTopLevelWorldView().getPlane())
                 {
                     continue;
                 }
-                renderGameObject(stair, config.stairHighlightColor(), graphics);
+                renderTileObject(stair, config.stairHighlightColor(), graphics);
             }
         }
 
 		if (config.highlightWireMachine() && plugin.getWireMachine() != null)
 		{
-			renderGameObject(plugin.getWireMachine(), config.wireMachineHighlightColor(), graphics);
-			renderWireTimer(graphics);
+			GameObject wireMachine = plugin.getWireMachine();
+			if (wireMachine.getId() == 22730)
+			{
+				renderTileObject(wireMachine, config.wireMachineHighlightColor(), graphics);
+			}
+			else
+			{
+				renderWireTimer(graphics);
+			}
 		}
-
 
 		return null;
 	}
 
 	private void renderLamps(Graphics2D graphics)
-	{
-		for (GameObject lampObject : plugin.getSpawnedLamps().values())
-		{
-			// if (lampObject.getPlane() != client.getPlane())
-			// {
-			// 	continue;
-			// }
+	{        
+        for (GameObject lampObject : plugin.getSpawnedLamps().values())
+        {
+            if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane() && !config.highlightAllPlanesLamps())
+            {
+                continue;
+            }
+            
+            Lamp lamp = DKLampsHelper.getLamp(lampObject.getId());
+            if (lamp == null)
+            {
+                continue;
+            }
 
-			Lamp lamp = DKLampsHelper.getLamp(lampObject.getId());
-			if (lamp == null)
-			{
-				continue;
-			}
+            LampStatus status = plugin.getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
 
-			LampStatus status = plugin.getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
+            Color color;
+            if (status == LampStatus.BROKEN && config.highlightBrokenLamps())
+            {
+                color = config.getBrokenLampColor();
+            }
+            else if (status == LampStatus.FIXED && config.highlightWorkingLamps())
+            {
+                color = config.getWorkingLampColor();
+            }
+            else if (config.highlightAllLamps())
+            {
+                color = config.getDefaultLampColor();
+            }
+            else
+            {
+                continue;
+            }
 
-			Color color;
-			if (status == LampStatus.BROKEN)
-			{
-				color = config.getBrokenLampColor();
-			}
-			else if (status == LampStatus.FIXED && config.showKnownWorkingLamps())
-			{
-				color = config.getWorkingLampColor();
-			}
-			else if (config.showAllLamps())
-			{
-				color = config.getDefaultLampColor();
-			}
-			else
-			{
-				continue;
-			}
+            int planeDifference = Math.abs(lampObject.getPlane() - client.getTopLevelWorldView().getPlane());
+            switch (planeDifference) {
+                case 2:
+                    color = color.brighter().brighter();
+                    break;
+                case 1:
+                    color = color.brighter();
+                    break;
+                default:
+                    break;
+            }
 
-			renderGameObject(lampObject, color, graphics);
-		}
-	}
+            renderTileObject(lampObject, color, graphics);
+        }
+    }
 
-	private void renderGameObject(GameObject gameObject, Color color, Graphics2D graphics)
+    private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics)
 	{
 		HighlightStyle style = config.highlightStyle();
 		switch (style)
 		{
 			case HIGHLIGHT_BORDER:
-				modelOutlineRenderer.drawOutline(gameObject, config.borderThickness(), color, config.borderFeather());
+				modelOutlineRenderer.drawOutline(tileObject, config.borderThickness(), color, config.borderFeather());
 				break;
 			case HIGHLIGHT_CLICKBOX:
-				Shape clickbox = gameObject.getClickbox();
+				Shape clickbox = tileObject.getClickbox();
 				if (clickbox != null)
 				{
 					Point mousePosition = client.getMouseCanvasPosition();
@@ -161,14 +189,37 @@ public class DKLampsOverlay extends Overlay
 		}
 
 		Duration duration = Duration.between(now, plugin.getWireRespawnTime());
-		long seconds = duration.getSeconds();
+		long seconds = duration.toSeconds();
+		double progress = (double) duration.toMillis() / ((WIRE_RESPAWN_TICKS - 1) * 600.0);
 
-		String text = String.valueOf(seconds);
+
 		LocalPoint lp = plugin.getWireMachine().getLocalLocation();
-		Point point = net.runelite.api.Perspective.getCanvasTextLocation(client, graphics, lp, text, 0);
+		Point point = net.runelite.api.Perspective.getCanvasTextLocation(client, graphics, lp, " ", 0);
 
-		if (point != null)
+		if (point == null)
 		{
+			return;
+		}
+
+		if (config.timerType() == TimerTypes.PIE)
+		{
+			ProgressPieComponent pie = new ProgressPieComponent();
+			pie.setPosition(point);
+			pie.setBorderColor(Color.WHITE);
+			pie.setDiameter(20);
+			pie.setFill(config.wireMachineHighlightColor());
+			pie.setProgress(progress);
+			pie.render(graphics);
+		}
+		else if (config.timerType() == TimerTypes.TICKS)
+		{
+			long ticks = (long) Math.ceil(duration.toMillis() / 600.0);
+			String text = String.valueOf(ticks);
+			OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
+		}
+		else if (config.timerType() == TimerTypes.SECONDS)
+		{
+			String text = String.valueOf(seconds);
 			OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
 		}
 	}

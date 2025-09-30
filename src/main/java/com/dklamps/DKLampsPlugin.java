@@ -12,16 +12,17 @@ import java.util.Set;
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
+import net.runelite.api.WallObject;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.WallObjectDespawned;
+import net.runelite.api.events.WallObjectSpawned;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -32,7 +33,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
 import static com.dklamps.ObjectIDs.DOOR_IDS;
 import static com.dklamps.ObjectIDs.STAIR_IDS;
-import static com.dklamps.ObjectIDs.WIRE_MACHINE_ID;
+import static com.dklamps.ObjectIDs.WIRE_MACHINE_IDS;
 
 @Slf4j
 @PluginDescriptor(
@@ -41,7 +42,7 @@ import static com.dklamps.ObjectIDs.WIRE_MACHINE_ID;
 public class DKLampsPlugin extends Plugin
 {
 	private static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
-	private static final int WIRE_RESPAWN_SECONDS = 5;
+	private static final int WIRE_RESPAWN_TICKS = 8;
 
 	@Inject
 	private Client client;
@@ -64,7 +65,7 @@ public class DKLampsPlugin extends Plugin
     @Getter
 	private final Map<WorldPoint, GameObject> spawnedLamps = new HashMap<>();
     @Getter
-	private final Set<GameObject> doors = new HashSet<>();
+	private final Set<WallObject> doors = new HashSet<>();
 	@Getter
 	private final Set<GameObject> stairs = new HashSet<>();
 	@Getter
@@ -124,21 +125,22 @@ public class DKLampsPlugin extends Plugin
 	public void onGameObjectSpawned(GameObjectSpawned event)
 	{
 		GameObject gameObject = event.getGameObject();
+
 		if (DKLampsHelper.isLamp(gameObject.getId()))
 		{
 			spawnedLamps.put(gameObject.getWorldLocation(), gameObject);
-		}
-        else if (DOOR_IDS.contains(gameObject.getId()))
-		{
-			doors.add(gameObject);
 		}
 		else if (STAIR_IDS.contains(gameObject.getId()))
 		{
 			stairs.add(gameObject);
 		}
-		else if (gameObject.getId() == WIRE_MACHINE_ID)
+		else if (WIRE_MACHINE_IDS.contains(gameObject.getId()))
 		{
 			wireMachine = gameObject;
+			if (gameObject.getId() == 22731)
+			{
+				wireRespawnTime = Instant.now().plusSeconds((long) ((WIRE_RESPAWN_TICKS - 1) * 0.6));
+			}
 		}
 	}
 
@@ -150,19 +152,35 @@ public class DKLampsPlugin extends Plugin
 		{
 			spawnedLamps.remove(gameObject.getWorldLocation());
 		}
-        else if (DOOR_IDS.contains(gameObject.getId()))
-		{
-			doors.remove(gameObject);
-		}
 		else if (STAIR_IDS.contains(gameObject.getId()))
 		{
 			stairs.remove(gameObject);
 		}
-		else if (gameObject.getId() == WIRE_MACHINE_ID)
+		else if (WIRE_MACHINE_IDS.contains(gameObject.getId()))
 		{
 			wireMachine = null;
 		}
 	}
+
+    @Subscribe
+    public void onWallObjectSpawned(WallObjectSpawned event)
+    {
+        WallObject wallObject = event.getWallObject();
+        if (DOOR_IDS.contains(wallObject.getId()))
+        {
+            doors.add(wallObject);
+        }
+    }
+
+    @Subscribe
+    public void onWallObjectDespawned(WallObjectDespawned event)
+    {
+        WallObject wallObject = event.getWallObject();
+        if (DOOR_IDS.contains(wallObject.getId()))
+        {
+            doors.remove(wallObject);
+        }
+    }
 
     @Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
@@ -181,15 +199,6 @@ public class DKLampsPlugin extends Plugin
 				brokenLamps.clear();
 				resetLampStatuses();
 			}
-		}
-	}
-
-    @Subscribe
-	public void onChatMessage(ChatMessage event)
-	{
-		if (event.getType() == ChatMessageType.SPAM && event.getMessage().equals("You take a coil of wire from the machine."))
-		{
-			wireRespawnTime = Instant.now().plusSeconds(WIRE_RESPAWN_SECONDS);
 		}
 	}
 
@@ -220,9 +229,6 @@ public class DKLampsPlugin extends Plugin
 
 		int lampVarbit = client.getVarbitValue(DORGESHKAAN_LAMPS_VARBIT);
 		brokenLamps = DKLampsHelper.getBrokenLamps(lampVarbit, currentArea);
-
-        log.info("{} Broken lamps: {}", brokenLamps.size(), brokenLamps);
-        log.info("{} Previously broken lamps: {}", previouslyBrokenLamps.size(), previouslyBrokenLamps);
 
 		Set<Lamp> fixedLamps = new HashSet<>(previouslyBrokenLamps);
 		fixedLamps.removeAll(brokenLamps);
