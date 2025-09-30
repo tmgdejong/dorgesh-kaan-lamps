@@ -189,8 +189,8 @@ public class DKLampsOverlay extends Overlay
 		}
 
 		Duration duration = Duration.between(now, plugin.getWireRespawnTime());
-		long seconds = duration.toSeconds();
-		double progress = (double) duration.toMillis() / ((WIRE_RESPAWN_TICKS - 1) * 600.0);
+		double seconds = (double) Math.ceil(duration.toMillis() / 100.0) / 10.0;
+		double progress = (double) duration.toMillis() / ((WIRE_RESPAWN_TICKS) * 600.0);
 
 
 		LocalPoint lp = plugin.getWireMachine().getLocalLocation();

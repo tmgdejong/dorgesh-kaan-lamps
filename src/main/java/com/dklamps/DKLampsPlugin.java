@@ -139,7 +139,7 @@ public class DKLampsPlugin extends Plugin
 			wireMachine = gameObject;
 			if (gameObject.getId() == 22731)
 			{
-				wireRespawnTime = Instant.now().plusSeconds((long) ((WIRE_RESPAWN_TICKS - 1) * 0.6));
+				wireRespawnTime = Instant.now().plusMillis((WIRE_RESPAWN_TICKS) * 600);
 			}
 		}
 	}
