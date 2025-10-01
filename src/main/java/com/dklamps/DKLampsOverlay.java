@@ -1,14 +1,17 @@
 package com.dklamps;
 
-import java.awt.AlphaComposite;
 import java.awt.Color;
-import java.awt.Composite;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.time.Instant;
 import java.time.Duration;
 import javax.inject.Inject;
+
+import com.dklamps.enums.HighlightTypes;
+import com.dklamps.enums.Lamp;
+import com.dklamps.enums.LampStatus;
+import com.dklamps.enums.TimerTypes;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -99,7 +102,7 @@ public class DKLampsOverlay extends Overlay
 	{        
         for (GameObject lampObject : plugin.getSpawnedLamps().values())
         {
-            if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane() && !config.highlightAllPlanesLamps())
+            if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane() && !config.highlightOtherPlanesLamps())
             {
                 continue;
             }
@@ -117,7 +120,7 @@ public class DKLampsOverlay extends Overlay
             {
                 color = config.getBrokenLampColor();
             }
-            else if (status == LampStatus.FIXED && config.highlightWorkingLamps())
+            else if (status == LampStatus.WORKING && config.highlightWorkingLamps())
             {
                 color = config.getWorkingLampColor();
             }
@@ -130,16 +133,9 @@ public class DKLampsOverlay extends Overlay
                 continue;
             }
 
-            int planeDifference = Math.abs(lampObject.getPlane() - client.getTopLevelWorldView().getPlane());
-            switch (planeDifference) {
-                case 2:
-                    color = color.brighter().brighter();
-                    break;
-                case 1:
-                    color = color.brighter();
-                    break;
-                default:
-                    break;
+            if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane() && config.darkenOtherPlanesLamps())
+            {
+                color = color.darker();
             }
 
             renderTileObject(lampObject, color, graphics);
@@ -148,7 +144,7 @@ public class DKLampsOverlay extends Overlay
 
     private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics)
 	{
-		HighlightStyle style = config.highlightStyle();
+		HighlightTypes style = config.highlightStyle();
 		switch (style)
 		{
 			case HIGHLIGHT_BORDER:
@@ -205,7 +201,7 @@ public class DKLampsOverlay extends Overlay
 		{
 			ProgressPieComponent pie = new ProgressPieComponent();
 			pie.setPosition(point);
-			pie.setBorderColor(Color.WHITE);
+			pie.setBorderColor(config.wireMachineHighlightColor());
 			pie.setDiameter(20);
 			pie.setFill(config.wireMachineHighlightColor());
 			pie.setProgress(progress);
@@ -219,7 +215,7 @@ public class DKLampsOverlay extends Overlay
 		}
 		else if (config.timerType() == TimerTypes.SECONDS)
 		{
-			String text = String.valueOf(seconds);
+			String text = String.format("%.1f", seconds);
 			OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
 		}
 	}

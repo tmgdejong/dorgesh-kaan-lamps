@@ -1,5 +1,6 @@
 package com.dklamps;
 
+import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -15,6 +16,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+
+import com.dklamps.enums.DisplayFloorTypes;
+import com.dklamps.enums.Lamp;
+import com.dklamps.enums.LampStatus;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
@@ -42,7 +48,7 @@ public class MapPanel extends JPanel
 
 		setLayout(new BorderLayout());
 
-		JLabel titleLabel = new JLabel(title, JLabel.CENTER);
+		// JLabel titleLabel = new JLabel(title, JLabel.CENTER);
 		// add(titleLabel, BorderLayout.NORTH);
 
 		JPanel mapDisplay = new MapDisplay();
@@ -110,18 +116,24 @@ public class MapPanel extends JPanel
 			super.paintComponent(g);
 
 			if (mapImage == null) return;
-			// Draw the map scaled to the component's current size
 			g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null);
+
+			Graphics2D g2d = (Graphics2D) g;
+			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            if (plugin.getClient().getLocalPlayer() != null &&
+                    plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() != plane)
+                {
+                    g2d.setColor(new Color(0, 0, 0, 50));
+                    g2d.fillRect(0, 0, getWidth(), getHeight());
+                }
 
 			if (plugin.getClient().getLocalPlayer() != null &&
 				plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() == plane)
 			{
-				g.setColor(Color.CYAN);
+				g.setColor(Color.WHITE);
 				g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
 			}
-
-			Graphics2D g2d = (Graphics2D) g;
-			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 			for (Lamp lamp : lampsOnThisFloor)
 			{
@@ -132,7 +144,7 @@ public class MapPanel extends JPanel
 				{
 					color = plugin.getConfig().getBrokenLampColor();
 				}
-				else if (status == LampStatus.FIXED)
+				else if (status == LampStatus.WORKING)
 				{
 					color = plugin.getConfig().getWorkingLampColor();
 				}
@@ -150,6 +162,13 @@ public class MapPanel extends JPanel
 					g2d.draw(circle);
 				}
 			}
+
+            if (plugin.getClient().getLocalPlayer() != null && 
+                plugin.getConfig().displayPlayerInPanel() != DisplayFloorTypes.NONE)
+            {
+                WorldPoint playerLocation = plugin.getClient().getLocalPlayer().getWorldLocation();
+                drawPlayerDot(g2d, playerLocation);
+            }
 		}
 
 		private Ellipse2D.Double getLampCircle(Lamp lamp)
@@ -175,5 +194,53 @@ public class MapPanel extends JPanel
 
 			return new Ellipse2D.Double(panelX - radius, panelY - radius, radius * 2, radius * 2);
 		}
+
+        private void drawPlayerDot(Graphics2D g2d, WorldPoint playerLocation)
+        {
+            if (plugin.getConfig().displayPlayerInPanel() == DisplayFloorTypes.CURRENT_FLOOR &&
+                playerLocation.getPlane() != plane)
+            {
+                return;
+            }
+            
+            float opacity = plugin.getConfig().playerOpacityOtherFloors() * 0.01f;
+            if (playerLocation.getPlane() == plane)
+            {
+                opacity = 1.0f;
+            }
+
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+            g2d.setColor(Color.WHITE);
+
+            Ellipse2D.Double playerCircle = getPointCircle(playerLocation);
+            if (playerCircle != null)
+            {
+                g2d.fill(playerCircle);
+                g2d.setColor(Color.WHITE);
+                g2d.draw(playerCircle);
+            }
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        }
+
+        private Ellipse2D.Double getPointCircle(WorldPoint point)
+        {
+            if (point.getX() < MAP_NORTH_WEST_CORNER.getX() || point.getX() > MAP_SOUTH_EAST_CORNER.getX() ||
+                point.getY() > MAP_NORTH_WEST_CORNER.getY() || point.getY() < MAP_SOUTH_EAST_CORNER.getY())
+            {
+                return null;
+            }
+
+            double mapWidthInTiles = (MAP_SOUTH_EAST_CORNER.getX() - MAP_NORTH_WEST_CORNER.getX()) + 1;
+            double mapHeightInTiles = (MAP_NORTH_WEST_CORNER.getY() - MAP_SOUTH_EAST_CORNER.getY()) + 1;
+
+            double relativeX = (point.getX() - MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
+            double relativeY = (MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
+
+            int panelX = (int) (relativeX * getWidth());
+            int panelY = (int) (relativeY * getHeight());
+            int radius = 5;
+
+            return new Ellipse2D.Double(panelX - radius, panelY - radius, radius * 2, radius * 2);
+        }
 	}
 }

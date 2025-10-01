@@ -1,4 +1,4 @@
-package com.dklamps;
+package com.dklamps.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

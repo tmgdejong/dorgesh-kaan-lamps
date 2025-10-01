@@ -1,6 +1,11 @@
 package com.dklamps;
 
 import java.awt.Color;
+
+import com.dklamps.enums.DisplayFloorTypes;
+import com.dklamps.enums.HighlightTypes;
+import com.dklamps.enums.TimerTypes;
+
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -103,29 +108,84 @@ public interface DKLampsConfig extends Config
 
     @ConfigItem(
 		keyName = "highlightAllPlanesLamps",
-		name = "All Planes",
-		description = "Highlight all lamps on all planes.",
+		name = "Other Planes",
+		description = "Highlight lamps on other planes.",
         section = lampsSection,
         position = 7
 	)
-	default boolean highlightAllPlanesLamps()
+	default boolean highlightOtherPlanesLamps()
 	{
 		return false;
 	}
 
-    // @Range(min = 0, max = 100)
-    // @ConfigItem(
-	// 	keyName = "ColourChangePerPlane",
-	// 	name = "Colour Change Per Plane",
-	// 	description = "Set the opacity for lamps on other planes.",
-    //     section = lampsSection,
-    //     position = 8
-	// )
-	// default int colourChangePerPlane()
-	// {
-	// 	return 25;
-	// }
+    @ConfigItem(
+		keyName = "darkenOtherPlanesLamps",
+		name = "Darken Other Planes",
+		description = "Darken lamps on other planes.",
+        section = lampsSection,
+        position = 8
+	)
+	default boolean darkenOtherPlanesLamps()
+	{
+		return true;
+	}
 
+    @ConfigSection(
+        name = "Side Panel",
+        description = "Settings for the side panel map.",
+        position = 50
+	)
+	String sidePanelSection = "sidePanel";
+
+    @ConfigItem(
+        keyName = "enableSidePanel",
+        name = "Enable Side Panel",
+        description = "Enable the side panel map.",
+        section = sidePanelSection,
+        position = 1
+    )
+    default boolean enableSidePanel()
+    {
+        return true;
+    }
+
+
+    @ConfigItem(
+        keyName = "displayWorkingLampsInPanel",
+        name = "Display Working Lamps",
+        description = "Display working lamps in the side panel map.",
+        section = sidePanelSection,
+        position = 2
+    )
+    default DisplayFloorTypes displayWorkingLampsInPanel()
+    {
+        return DisplayFloorTypes.ALL_FLOORS;
+    }
+
+    @ConfigItem(
+        keyName = "displayPlayerInPanel",
+        name = "Display Player",
+        description = "Display the player's location in the side panel map.",
+        section = sidePanelSection,
+        position = 3
+    )
+    default DisplayFloorTypes displayPlayerInPanel()
+    {
+        return DisplayFloorTypes.ALL_FLOORS;
+    }
+
+    @Range(min = 1, max = 100)
+    @ConfigItem(
+        keyName = "playerOpacityOtherFloors",
+        name = "Player Opacity Other Floors",
+        description = "The opacity of the player icon on other floors.",
+        section = sidePanelSection,
+        position = 4
+    )
+    default int playerOpacityOtherFloors()
+    {
+        return 50;
+    }
 
     @ConfigSection(
         name = "Hints",
@@ -232,9 +292,9 @@ public interface DKLampsConfig extends Config
         section = highlightStyleSection,
         position = 1
     )
-    default HighlightStyle highlightStyle()
+    default HighlightTypes highlightStyle()
     {
-        return HighlightStyle.HIGHLIGHT_CLICKBOX;
+        return HighlightTypes.HIGHLIGHT_CLICKBOX;
     }
 
     @Range(min = 0, max = 4)

@@ -1,5 +1,8 @@
 package com.dklamps;
 
+import com.dklamps.enums.Area;
+import com.dklamps.enums.Lamp;
+import com.dklamps.enums.LampStatus;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.time.Instant;
@@ -240,7 +243,7 @@ public class DKLampsPlugin extends Plugin
 			for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
 			{
 				Area lampArea = entry.getKey().getArea();
-				if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.FIXED)
+				if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.WORKING)
 				{
 					lampStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
 				}
@@ -251,7 +254,7 @@ public class DKLampsPlugin extends Plugin
 		Set<Lamp> lampsInCurrentArea = DKLampsHelper.getLampsByArea(currentArea);
 		for (Lamp lamp : lampsInCurrentArea)
 		{
-			lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.FIXED);
+			lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
 		}
 
 		// Also update statuses for the opposite area
@@ -261,7 +264,7 @@ public class DKLampsPlugin extends Plugin
 			Set<Lamp> validOppositeLamps = DKLampsHelper.getValidOppositeLamps(currentArea);
 			for (Lamp lamp : validOppositeLamps)
 			{
-				lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.FIXED);
+				lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
 			}
 		}
 

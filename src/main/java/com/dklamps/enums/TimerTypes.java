@@ -1,4 +1,4 @@
-package com.dklamps;
+package com.dklamps.enums;
 
 public enum TimerTypes {
     PIE,

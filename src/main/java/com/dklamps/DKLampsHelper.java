@@ -1,5 +1,7 @@
 package com.dklamps;
 
+import com.dklamps.enums.Area;
+import com.dklamps.enums.Lamp;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
