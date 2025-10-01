@@ -12,14 +12,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.WallObject;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
@@ -46,6 +51,7 @@ public class DKLampsPlugin extends Plugin
 {
 	private static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
 	private static final int WIRE_RESPAWN_TICKS = 8;
+    private static final Pattern HINT_PATTERN = Pattern.compile("There is another broken lamp nearby, (.+?) of here (.+?)\\.");
 
 	@Inject
 	private Client client;
@@ -221,8 +227,6 @@ public class DKLampsPlugin extends Plugin
 			return;
 		}
 
-		// If the player has just entered a new area, do nothing this tick.
-		// Update lastArea and wait for the next tick to ensure varbits are synced.
 		if (!currentArea.equals(lastArea))
 		{
 			lastArea = currentArea;
@@ -238,7 +242,6 @@ public class DKLampsPlugin extends Plugin
 
 		if (!fixedLamps.isEmpty())
 		{
-			// A lamp was fixed. Reset other Fixed lamps to Unknown.
 			Area oppositeArea = currentArea.getOpposite();
 			for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
 			{
@@ -250,14 +253,12 @@ public class DKLampsPlugin extends Plugin
 			}
 		}
 
-		// Update statuses for the current area with fresh data
 		Set<Lamp> lampsInCurrentArea = DKLampsHelper.getLampsByArea(currentArea);
 		for (Lamp lamp : lampsInCurrentArea)
 		{
 			lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
 		}
 
-		// Also update statuses for the opposite area
 		Area oppositeArea = currentArea.getOpposite();
 		if (oppositeArea != null)
 		{
@@ -282,10 +283,129 @@ public class DKLampsPlugin extends Plugin
 			client.clearHintArrow();
 		}
 
-		// Update state for the next tick
 		previouslyBrokenLamps = new HashSet<>(brokenLamps);
 		lastArea = currentArea;
 	}
+
+    @Subscribe
+    public void onChatMessage(ChatMessage event)
+    {
+        if (event.getType() != ChatMessageType.GAMEMESSAGE)
+        {
+            return;
+        }
+
+        Matcher matcher = HINT_PATTERN.matcher(event.getMessage());
+
+        if (matcher.find())
+        {
+            WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+            if (playerLocation == null)
+            {
+                return;
+            }
+
+            String directionHint = matcher.group(1).toLowerCase();
+            String floorHint = matcher.group(2);
+
+            int currentPlane = playerLocation.getPlane();
+            if (floorHint != null)
+            {
+                if (floorHint.contains("upstairs"))
+                {
+                    if (currentPlane == 0)
+                    {
+                        findLampFromHint(directionHint, 1, playerLocation);
+                        findLampFromHint(directionHint, 2, playerLocation);
+                    }
+                    else if (currentPlane == 1)
+                    {
+                        findLampFromHint(directionHint, 2, playerLocation);
+                    }
+                }
+                else if (floorHint.contains("downstairs"))
+                {
+                    if (currentPlane == 2)
+                    {
+                        findLampFromHint(directionHint, 1, playerLocation);
+                        findLampFromHint(directionHint, 0, playerLocation);
+                    }
+                    else if (currentPlane == 1)
+                    {
+                        findLampFromHint(directionHint, 0, playerLocation);
+                    }
+                }
+                else if (floorHint.contains("on the same floor"))
+                {
+                    findLampFromHint(directionHint, currentPlane, playerLocation);
+                }
+                else
+                {
+                    log.warn("Unknown floor hint: {}", floorHint);
+                }
+            }
+        }
+    }
+
+    private void findLampFromHint(String directionHint, int targetPlane, WorldPoint playerLocation)
+    {
+        Set<Lamp> candidateLamps = new HashSet<>();
+        for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
+        {
+            if (entry.getKey().getWorldPoint().getPlane() == targetPlane && entry.getValue() == LampStatus.UNKNOWN)
+            {
+                candidateLamps.add(entry.getKey());
+            }
+        }
+
+        if (candidateLamps.isEmpty())
+        {
+            return;
+        }
+
+        Set<Lamp> matchingDirectionLamps = new HashSet<>();
+        for (Lamp lamp : candidateLamps)
+        {
+            int dx = lamp.getWorldPoint().getX() - playerLocation.getX();
+            int dy = lamp.getWorldPoint().getY() - playerLocation.getY();
+            boolean directionMatch = false;
+
+            // TODO: combined directions like "north east"
+            if (directionHint.contains("north") && dy > 0) directionMatch = true;
+            if (directionHint.contains("south") && dy < 0) directionMatch = true;
+            if (directionHint.contains("east") && dx > 0) directionMatch = true;
+            if (directionHint.contains("west") && dx < 0) directionMatch = true;
+            if (!directionHint.contains("north") && !directionHint.contains("south") && !directionHint.contains("east") && !directionHint.contains("west"))
+            {
+                directionMatch = true; // No direction hint (e.g., just "upstairs")
+            }
+
+
+            if (directionMatch)
+            {
+                matchingDirectionLamps.add(lamp);
+            }
+        }
+
+        // If direction filtering is too strict, fall back to all unknown lamps on that plane
+        if (matchingDirectionLamps.isEmpty())
+        {
+            matchingDirectionLamps.addAll(candidateLamps);
+        }
+
+        Lamp closestLamp = matchingDirectionLamps.stream()
+                .min(Comparator.comparingInt(lamp -> lamp.getWorldPoint().distanceTo(playerLocation)))
+                .orElse(null);
+
+        if (closestLamp != null)
+        {
+            lampStatuses.put(closestLamp, LampStatus.BROKEN);
+            if (panel.isVisible())
+            {
+                panel.update();
+            }
+        }
+    }
 
 	public void setHintArrow(Lamp lamp)
 	{

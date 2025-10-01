@@ -184,7 +184,7 @@ public interface DKLampsConfig extends Config
     )
     default int playerOpacityOtherFloors()
     {
-        return 50;
+        return 75;
     }
 
     @ConfigSection(

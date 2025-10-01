@@ -144,7 +144,10 @@ public class MapPanel extends JPanel
 				{
 					color = plugin.getConfig().getBrokenLampColor();
 				}
-				else if (status == LampStatus.WORKING)
+                else if (status == LampStatus.WORKING &&
+                        ((plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorTypes.ALL_FLOORS)
+                                || (plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorTypes.CURRENT_FLOOR
+                                        && lamp.getWorldPoint().getPlane() == plane)))
 				{
 					color = plugin.getConfig().getWorkingLampColor();
 				}
@@ -238,7 +241,7 @@ public class MapPanel extends JPanel
 
             int panelX = (int) (relativeX * getWidth());
             int panelY = (int) (relativeY * getHeight());
-            int radius = 5;
+            int radius = 4;
 
             return new Ellipse2D.Double(panelX - radius, panelY - radius, radius * 2, radius * 2);
         }
