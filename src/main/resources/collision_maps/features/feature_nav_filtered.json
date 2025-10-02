@@ -1,0 +1,1122 @@
+{
+    "1_8026": [
+        {
+            "rowNumber": 1454,
+            "groupName": "Interactive scenery",
+            "no-repeat-key": "1454",
+            "destination": {
+                "plane": 0,
+                "x": 2488,
+                "y": 5536,
+                "f": "0_12144"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2696,
+                "y": 5277,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5754,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5754",
+            "destination": {
+                "plane": 3,
+                "x": 2722,
+                "y": 5249,
+                "f": "3_743"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2722,
+                "y": 5255,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5743,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5743",
+            "destination": {
+                "plane": 0,
+                "x": 2705,
+                "y": 5305,
+                "f": "0_14584"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2701,
+                "y": 5305,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5744,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5744",
+            "destination": {
+                "plane": 0,
+                "x": 2713,
+                "y": 5293,
+                "f": "0_14584"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2709,
+                "y": 5293,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5745,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5745",
+            "destination": {
+                "plane": 0,
+                "x": 2713,
+                "y": 5277,
+                "f": "0_14717"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2713,
+                "y": 5281,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5746,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5746",
+            "destination": {
+                "plane": 0,
+                "x": 2713,
+                "y": 5284,
+                "f": "0_14584"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2713,
+                "y": 5281,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5747,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5747",
+            "destination": {
+                "plane": 0,
+                "x": 2722,
+                "y": 5268,
+                "f": "0_14717"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2722,
+                "y": 5272,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5748,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5748",
+            "destination": {
+                "plane": 0,
+                "x": 2722,
+                "y": 5276,
+                "f": "0_14862"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2722,
+                "y": 5272,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5749,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5749",
+            "destination": {
+                "plane": 0,
+                "x": 2721,
+                "y": 5292,
+                "f": "0_14584"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2725,
+                "y": 5292,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5750,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5750",
+            "destination": {
+                "plane": 0,
+                "x": 2729,
+                "y": 5304,
+                "f": "0_14960"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2729,
+                "y": 5300,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5751,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5751",
+            "destination": {
+                "plane": 0,
+                "x": 2730,
+                "y": 5306,
+                "f": "0_14960"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2734,
+                "y": 5306,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5752,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5752",
+            "destination": {
+                "plane": 0,
+                "x": 2738,
+                "y": 5277,
+                "f": "0_14717"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2738,
+                "y": 5281,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5753,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5753",
+            "destination": {
+                "plane": 0,
+                "x": 2722,
+                "y": 5260,
+                "f": "0_14717"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2722,
+                "y": 5257,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5759,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5759",
+            "destination": {
+                "plane": 0,
+                "x": 2705,
+                "y": 5327,
+                "f": "0_14584"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2701,
+                "y": 5327,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5760,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5760",
+            "destination": {
+                "plane": 0,
+                "x": 2727,
+                "y": 5346,
+                "f": "0_14584"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2731,
+                "y": 5346,
+                "f": "1_8026"
+            }
+        },
+        {
+            "rowNumber": 5761,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5761",
+            "destination": {
+                "plane": 0,
+                "x": 2720,
+                "y": 5358,
+                "f": "0_14584"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2720,
+                "y": 5361,
+                "f": "1_8026"
+            }
+        }
+    ],
+    "0_14717": [
+        {
+            "rowNumber": 4052,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4052",
+            "destination": {
+                "plane": 1,
+                "x": 2709,
+                "y": 5275,
+                "f": "1_8088"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2709,
+                "y": 5275,
+                "f": "0_14717"
+            }
+        },
+        {
+            "rowNumber": 5737,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5737",
+            "destination": {
+                "plane": 1,
+                "x": 2733,
+                "y": 5278,
+                "f": "1_8168"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2733,
+                "y": 5275,
+                "f": "0_14717"
+            }
+        },
+        {
+            "rowNumber": 5745,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5745",
+            "destination": {
+                "plane": 1,
+                "x": 2713,
+                "y": 5281,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2713,
+                "y": 5277,
+                "f": "0_14717"
+            }
+        },
+        {
+            "rowNumber": 5747,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5747",
+            "destination": {
+                "plane": 1,
+                "x": 2722,
+                "y": 5272,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2722,
+                "y": 5268,
+                "f": "0_14717"
+            }
+        },
+        {
+            "rowNumber": 5752,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5752",
+            "destination": {
+                "plane": 1,
+                "x": 2738,
+                "y": 5281,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2738,
+                "y": 5277,
+                "f": "0_14717"
+            }
+        },
+        {
+            "rowNumber": 5753,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5753",
+            "destination": {
+                "plane": 1,
+                "x": 2722,
+                "y": 5257,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2722,
+                "y": 5260,
+                "f": "0_14717"
+            }
+        }
+    ],
+    "0_14545": [
+        {
+            "rowNumber": 4053,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4053",
+            "destination": {
+                "plane": 1,
+                "x": 2695,
+                "y": 5328,
+                "f": "1_8031"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2695,
+                "y": 5328,
+                "f": "0_14545"
+            }
+        }
+    ],
+    "0_15061": [
+        {
+            "rowNumber": 4054,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4054",
+            "destination": {
+                "plane": 1,
+                "x": 2739,
+                "y": 5325,
+                "f": "1_8200"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2739,
+                "y": 5325,
+                "f": "0_15061"
+            }
+        }
+    ],
+    "1_8062": [
+        {
+            "rowNumber": 4055,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4055",
+            "destination": {
+                "plane": 2,
+                "x": 2702,
+                "y": 5363,
+                "f": "2_1162"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2702,
+                "y": 5363,
+                "f": "1_8062"
+            }
+        },
+        {
+            "rowNumber": 5755,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5755",
+            "destination": {
+                "plane": 0,
+                "x": 2705,
+                "y": 5363,
+                "f": "0_14656"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2705,
+                "y": 5366,
+                "f": "1_8062"
+            }
+        }
+    ],
+    "1_8221": [
+        {
+            "rowNumber": 4056,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4056",
+            "destination": {
+                "plane": 2,
+                "x": 2745,
+                "y": 5354,
+                "f": "2_1228"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2745,
+                "y": 5354,
+                "f": "1_8221"
+            }
+        }
+    ],
+    "1_8088": [
+        {
+            "rowNumber": 4052,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4052",
+            "destination": {
+                "plane": 0,
+                "x": 2709,
+                "y": 5275,
+                "f": "0_14717"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2709,
+                "y": 5275,
+                "f": "1_8088"
+            }
+        }
+    ],
+    "1_8031": [
+        {
+            "rowNumber": 4053,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4053",
+            "destination": {
+                "plane": 0,
+                "x": 2695,
+                "y": 5328,
+                "f": "0_14545"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2695,
+                "y": 5328,
+                "f": "1_8031"
+            }
+        }
+    ],
+    "1_8200": [
+        {
+            "rowNumber": 4054,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4054",
+            "destination": {
+                "plane": 0,
+                "x": 2739,
+                "y": 5325,
+                "f": "0_15061"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2739,
+                "y": 5325,
+                "f": "1_8200"
+            }
+        }
+    ],
+    "2_1162": [
+        {
+            "rowNumber": 4055,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4055",
+            "destination": {
+                "plane": 1,
+                "x": 2702,
+                "y": 5363,
+                "f": "1_8062"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2702,
+                "y": 5363,
+                "f": "2_1162"
+            }
+        }
+    ],
+    "2_1228": [
+        {
+            "rowNumber": 4056,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4056",
+            "destination": {
+                "plane": 1,
+                "x": 2745,
+                "y": 5354,
+                "f": "1_8221"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2745,
+                "y": 5354,
+                "f": "2_1228"
+            }
+        },
+        {
+            "rowNumber": 4056,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4056",
+            "destination": {
+                "plane": 1,
+                "x": 2745,
+                "y": 5354,
+                "f": "1_8233"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2745,
+                "y": 5354,
+                "f": "2_1228"
+            }
+        }
+    ],
+    "1_8036": [
+        {
+            "rowNumber": 5738,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5738",
+            "destination": {
+                "plane": 2,
+                "x": 2696,
+                "y": 5294,
+                "f": "2_1154"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2696,
+                "y": 5291,
+                "f": "1_8036"
+            }
+        }
+    ],
+    "1_8038": [
+        {
+            "rowNumber": 5739,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5739",
+            "destination": {
+                "plane": 2,
+                "x": 2695,
+                "y": 5304,
+                "f": "2_1157"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2698,
+                "y": 5304,
+                "f": "1_8038"
+            }
+        }
+    ],
+    "1_8205": [
+        {
+            "rowNumber": 5740,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5740",
+            "destination": {
+                "plane": 2,
+                "x": 2739,
+                "y": 5257,
+                "f": "2_1223"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2739,
+                "y": 5260,
+                "f": "1_8205"
+            }
+        }
+    ],
+    "1_8193": [
+        {
+            "rowNumber": 5741,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5741",
+            "destination": {
+                "plane": 2,
+                "x": 2742,
+                "y": 5296,
+                "f": "2_1218"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2739,
+                "y": 5296,
+                "f": "1_8193"
+            }
+        }
+    ],
+    "1_8192": [
+        {
+            "rowNumber": 5742,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5742",
+            "destination": {
+                "plane": 2,
+                "x": 2743,
+                "y": 5289,
+                "f": "2_1221"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2743,
+                "y": 5286,
+                "f": "1_8192"
+            }
+        }
+    ],
+    "0_14584": [
+        {
+            "rowNumber": 5743,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5743",
+            "destination": {
+                "plane": 1,
+                "x": 2701,
+                "y": 5305,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2705,
+                "y": 5305,
+                "f": "0_14584"
+            }
+        },
+        {
+            "rowNumber": 5744,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5744",
+            "destination": {
+                "plane": 1,
+                "x": 2709,
+                "y": 5293,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2713,
+                "y": 5293,
+                "f": "0_14584"
+            }
+        },
+        {
+            "rowNumber": 5746,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5746",
+            "destination": {
+                "plane": 1,
+                "x": 2713,
+                "y": 5281,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2713,
+                "y": 5284,
+                "f": "0_14584"
+            }
+        },
+        {
+            "rowNumber": 5749,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5749",
+            "destination": {
+                "plane": 1,
+                "x": 2725,
+                "y": 5292,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2721,
+                "y": 5292,
+                "f": "0_14584"
+            }
+        },
+        {
+            "rowNumber": 5759,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5759",
+            "destination": {
+                "plane": 1,
+                "x": 2701,
+                "y": 5327,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2705,
+                "y": 5327,
+                "f": "0_14584"
+            }
+        },
+        {
+            "rowNumber": 5760,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5760",
+            "destination": {
+                "plane": 1,
+                "x": 2731,
+                "y": 5346,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2727,
+                "y": 5346,
+                "f": "0_14584"
+            }
+        },
+        {
+            "rowNumber": 5761,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5761",
+            "destination": {
+                "plane": 1,
+                "x": 2720,
+                "y": 5361,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2720,
+                "y": 5358,
+                "f": "0_14584"
+            }
+        }
+    ],
+    "0_14862": [
+        {
+            "rowNumber": 5748,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5748",
+            "destination": {
+                "plane": 1,
+                "x": 2722,
+                "y": 5272,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2722,
+                "y": 5276,
+                "f": "0_14862"
+            }
+        }
+    ],
+    "0_14960": [
+        {
+            "rowNumber": 5750,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5750",
+            "destination": {
+                "plane": 1,
+                "x": 2729,
+                "y": 5300,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2729,
+                "y": 5304,
+                "f": "0_14960"
+            }
+        },
+        {
+            "rowNumber": 5751,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5751",
+            "destination": {
+                "plane": 1,
+                "x": 2734,
+                "y": 5306,
+                "f": "1_8026"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2730,
+                "y": 5306,
+                "f": "0_14960"
+            }
+        }
+    ],
+    "0_14656": [
+        {
+            "rowNumber": 5755,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5755",
+            "destination": {
+                "plane": 1,
+                "x": 2705,
+                "y": 5366,
+                "f": "1_8062"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2705,
+                "y": 5363,
+                "f": "0_14656"
+            }
+        }
+    ],
+    "0_14993": [
+        {
+            "rowNumber": 5756,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5756",
+            "destination": {
+                "plane": 1,
+                "x": 2733,
+                "y": 5351,
+                "f": "1_8181"
+            },
+            "origin": {
+                "plane": 0,
+                "x": 2736,
+                "y": 5351,
+                "f": "0_14993"
+            }
+        }
+    ],
+    "1_8158": [
+        {
+            "rowNumber": 5757,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5757",
+            "destination": {
+                "plane": 2,
+                "x": 2738,
+                "y": 5366,
+                "f": "2_1197"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2735,
+                "y": 5366,
+                "f": "1_8158"
+            }
+        }
+    ],
+    "1_8206": [
+        {
+            "rowNumber": 5758,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5758",
+            "destination": {
+                "plane": 2,
+                "x": 2740,
+                "y": 5362,
+                "f": "2_1226"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2740,
+                "y": 5359,
+                "f": "1_8206"
+            }
+        }
+    ],
+    "1_8168": [
+        {
+            "rowNumber": 5737,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5737",
+            "destination": {
+                "plane": 0,
+                "x": 2733,
+                "y": 5275,
+                "f": "0_14717"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2733,
+                "y": 5278,
+                "f": "1_8168"
+            }
+        }
+    ],
+    "2_1154": [
+        {
+            "rowNumber": 5738,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5738",
+            "destination": {
+                "plane": 1,
+                "x": 2696,
+                "y": 5291,
+                "f": "1_8036"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2696,
+                "y": 5294,
+                "f": "2_1154"
+            }
+        }
+    ],
+    "2_1157": [
+        {
+            "rowNumber": 5739,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5739",
+            "destination": {
+                "plane": 1,
+                "x": 2698,
+                "y": 5304,
+                "f": "1_8038"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2695,
+                "y": 5304,
+                "f": "2_1157"
+            }
+        }
+    ],
+    "2_1223": [
+        {
+            "rowNumber": 5740,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5740",
+            "destination": {
+                "plane": 1,
+                "x": 2739,
+                "y": 5260,
+                "f": "1_8205"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2739,
+                "y": 5257,
+                "f": "2_1223"
+            }
+        }
+    ],
+    "2_1218": [
+        {
+            "rowNumber": 5741,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5741",
+            "destination": {
+                "plane": 1,
+                "x": 2739,
+                "y": 5296,
+                "f": "1_8193"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2742,
+                "y": 5296,
+                "f": "2_1218"
+            }
+        }
+    ],
+    "2_1221": [
+        {
+            "rowNumber": 5742,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5742",
+            "destination": {
+                "plane": 1,
+                "x": 2743,
+                "y": 5286,
+                "f": "1_8192"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2743,
+                "y": 5289,
+                "f": "2_1221"
+            }
+        }
+    ],
+    "1_8181": [
+        {
+            "rowNumber": 5756,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5756",
+            "destination": {
+                "plane": 0,
+                "x": 2736,
+                "y": 5351,
+                "f": "0_14993"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2733,
+                "y": 5351,
+                "f": "1_8181"
+            }
+        }
+    ],
+    "2_1197": [
+        {
+            "rowNumber": 5757,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5757",
+            "destination": {
+                "plane": 1,
+                "x": 2735,
+                "y": 5366,
+                "f": "1_8158"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2738,
+                "y": 5366,
+                "f": "2_1197"
+            }
+        }
+    ],
+    "2_1226": [
+        {
+            "rowNumber": 5758,
+            "groupName": "Stairs/Staircase (connected, direct plane => plane +1)",
+            "no-repeat-key": "5758",
+            "destination": {
+                "plane": 1,
+                "x": 2740,
+                "y": 5359,
+                "f": "1_8206"
+            },
+            "origin": {
+                "plane": 2,
+                "x": 2740,
+                "y": 5362,
+                "f": "2_1226"
+            }
+        }
+    ],
+    "1_8233": [
+        {
+            "rowNumber": 4056,
+            "groupName": "Ladder (connected, plane => plane +1)",
+            "no-repeat-key": "4056",
+            "destination": {
+                "plane": 2,
+                "x": 2745,
+                "y": 5354,
+                "f": "2_1228"
+            },
+            "origin": {
+                "plane": 1,
+                "x": 2745,
+                "y": 5354,
+                "f": "1_8233"
+            }
+        }
+    ]
+}
