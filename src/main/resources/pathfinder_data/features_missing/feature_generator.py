@@ -30,32 +30,35 @@ def generate_feature_json(feature_map_string, origin_x, origin_y, feature_id, pl
             if len(line) != expected_length:
                 raise ValueError(f"Line {i+1} has length {len(line)}, expected {expected_length}. All lines must have the same length!")
     
-    # Dimensions are based on the text map
     size_y = len(lines)
     size_x = len(lines[0]) if lines else 0
 
-    # The 'd' string is run-length encoded on a 4x4 sub-tile grid.
-    # A walkable game tile is 16 walkable sub-tiles.
-    # A non-walkable game tile is 16 non-walkable sub-tiles.
-    d_values = [size_x, size_y] 
-    
-    current_char = None
-    count = 0
+    # Build a flat list of characters in the correct column-major, bottom-to-top order.
+    flat_char_list = []
+    for x in range(size_x):
+        for y_line_idx in range(size_y - 1, -1, -1):
+            flat_char_list.append(lines[y_line_idx][x])
 
-    for line in reversed(lines): # Start from the bottom line for correct OSRS coordinates
-        for char in line:
-            if current_char is None:
-                current_char = char
-            
+    # The 'd' string is run-length encoded. It must start with a walkable count.
+    d_values = [size_x, size_y]
+    
+    # If the very first tile (south-west corner) is blocked, the initial walkable run is 0.
+    if not flat_char_list or flat_char_list[0] == 'X':
+        d_values.append(0)
+
+    # Perform run-length encoding on the correctly ordered flat list
+    if flat_char_list:
+        current_char = flat_char_list[0]
+        count = 0
+        for char in flat_char_list:
             if char == current_char:
                 count += 1
             else:
-                d_values.append(count * 16) # Add the count for the previous character type
+                d_values.append(count * 16) # A game tile has 4x4 sub-tiles
                 current_char = char
                 count = 1
-    
-    # Add the final run
-    if count > 0:
+        
+        # Add the final run
         d_values.append(count * 16)
 
     # Assemble the final JSON object
@@ -81,6 +84,7 @@ def generate_feature_json(feature_map_string, origin_x, origin_y, feature_id, pl
         if output_dir is None:
             output_dir = os.path.dirname(os.path.abspath(__file__))
         else:
+            os.makedirs(output_dir, exist_ok=True)
             output_dir = os.path.abspath(output_dir)
         
         filepath = os.path.join(output_dir, filename)
@@ -106,8 +110,12 @@ def generate_feature_json(feature_map_string, origin_x, origin_y, feature_id, pl
 
 def load_map_from_file(filepath):
     """Load a room layout from a text file."""
-    with open(filepath, 'r') as f:
-        return f.read()
+    try:
+        with open(filepath, 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Error: The file '{filepath}' was not found.")
+        sys.exit(1)
 
 def interactive_mode():
     """Run the generator in interactive mode, prompting for all parameters."""
@@ -162,7 +170,10 @@ def interactive_mode():
             output_dir = None
     
     # Generate
-    generate_feature_json(room_layout, origin_x, origin_y, feature_id, plane, save, output_dir)
+    try:
+        generate_feature_json(room_layout, origin_x, origin_y, feature_id, plane, save, output_dir)
+    except ValueError as e:
+        print(f"\nError: {e}")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -171,16 +182,16 @@ def main():
         epilog="""
 Examples:
   # Interactive mode
-  python feature_generator.py -i
+  python create_feature.py -i
   
-  # Generate from command line arguments
-  python feature_generator.py -f 50001 -p 1 -x 2700 -y 5350 -m "XXX\\nX X\\nXXX"
+  # Generate from command line arguments (use quotes for the map string)
+  python create_feature.py -f 50001 -p 1 -x 2700 -y 5350 -m "XXX\\nX X\\nXXX"
   
-  # Load layout from file and save output
-  python feature_generator.py -f 50001 -p 1 -x 2700 -y 5350 --map-file layout.txt -s -o ../features
+  # Load layout from file and save output to a 'features' subfolder
+  python create_feature.py -f 50001 -p 1 -x 2700 -y 5350 --map-file layout.txt -s -o features
   
-  # Use hardcoded example (legacy mode)
-  python feature_generator.py --example
+  # Use the hardcoded example
+  python create_feature.py --example
         """
     )
     
@@ -195,7 +206,7 @@ Examples:
     parser.add_argument('-y', '--origin-y', type=int,
                         help='Origin Y coordinate (south-west corner)')
     parser.add_argument('-m', '--map', type=str,
-                        help='Room layout as a string (use \\n for newlines)')
+                        help='Room layout as a string (use \\n for newlines in your shell)')
     parser.add_argument('--map-file', type=str,
                         help='Load room layout from a file')
     parser.add_argument('-s', '--save', action='store_true',
@@ -203,7 +214,7 @@ Examples:
     parser.add_argument('-o', '--output-dir', type=str,
                         help='Output directory for saved file')
     parser.add_argument('--example', action='store_true',
-                        help='Run with hardcoded example values (legacy mode)')
+                        help='Run with hardcoded example values')
     
     args = parser.parse_args()
     
@@ -212,7 +223,7 @@ Examples:
         interactive_mode()
         return
     
-    # Example mode (legacy)
+    # Example mode
     if args.example:
         room_layout = """
 XXXXXXXXX
@@ -226,9 +237,14 @@ XXXXXXXXX
         generate_feature_json(room_layout, 2700, 5350, 50001, 1, args.save, args.output_dir)
         return
     
+    # Default to help if no arguments are given
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
     # Command-line mode
     if args.feature_id is None or args.plane is None or args.origin_x is None or args.origin_y is None:
-        parser.error("Required arguments: -f/--feature-id, -p/--plane, -x/--origin-x, -y/--origin-y (or use -i for interactive mode)")
+        parser.error("Required arguments: -f/--feature-id, -p/--plane, -x/--origin-x, -y/--origin-y (or use -i)")
     
     # Get room layout
     if args.map_file:
@@ -239,7 +255,11 @@ XXXXXXXXX
         parser.error("Either --map or --map-file must be provided")
     
     # Generate
-    generate_feature_json(room_layout, args.origin_x, args.origin_y, args.feature_id, args.plane, args.save, args.output_dir)
+    try:
+        generate_feature_json(room_layout, args.origin_x, args.origin_y, args.feature_id, args.plane, args.save, args.output_dir)
+    except ValueError as e:
+        print(f"\nError: {e}")
 
 if __name__ == '__main__':
     main()
+
