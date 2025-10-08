@@ -3,8 +3,10 @@ package com.dklamps;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Polygon;
 import java.awt.Shape;
 import java.time.Instant;
+import java.util.List;
 import java.time.Duration;
 import javax.inject.Inject;
 
@@ -16,10 +18,12 @@ import com.dklamps.enums.TimerTypes;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
+import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.TileObject;
 import net.runelite.api.WallObject;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -94,6 +98,8 @@ public class DKLampsOverlay extends Overlay
 				renderWireTimer(graphics);
 			}
 		}
+
+        // drawPath(graphics);
 
 		return null;
 	}
@@ -219,4 +225,33 @@ public class DKLampsOverlay extends Overlay
 			OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
 		}
 	}
+
+    private void drawPath(Graphics2D graphics)
+    {
+        List<WorldPoint> path = plugin.getShortestPath();
+        if (path == null || path.isEmpty())
+        {
+            return;
+        }
+
+        for (WorldPoint point : path)
+        {
+            if (point.getPlane() != client.getTopLevelWorldView().getPlane())
+            {
+                continue;
+            }
+
+            LocalPoint localPoint = LocalPoint.fromWorld(client, point);
+            if (localPoint == null)
+            {
+                continue;
+            }
+
+            Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
+            if (poly != null)
+            {
+                OverlayUtil.renderPolygon(graphics, poly, Color.CYAN);
+            }
+        }
+    }
 }

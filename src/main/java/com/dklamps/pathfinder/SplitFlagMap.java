@@ -1,13 +1,10 @@
 package com.dklamps.pathfinder;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -19,7 +16,6 @@ public class SplitFlagMap {
 
     @Getter
     private final byte[] regionMapPlaneCounts;
-    // Size is automatically chosen based on the max extents of the collision data
     private final FlagMap[] regionMaps;
     private final int widthInclusive;
 
@@ -65,20 +61,24 @@ public class SplitFlagMap {
         return (x & 0xFFFF) | ((y & 0xFFFF) << 16);
     }
 
-    public static SplitFlagMap loadFromFile(String path) throws IOException {
+    public static SplitFlagMap loadFromResources() {
         Map<Integer, byte[]> compressedRegions = new HashMap<>();
         String[] regionFiles = {"42_82", "42_83"};
-        String basePath = "src/main/resources/collision_maps/";
 
         int minX = 42, minY = 82, maxX = 42, maxY = 83;
 
         for (String regionFile : regionFiles) {
-            String[] n = regionFile.split("_");
-            final int x = Integer.parseInt(n[0]);
-            final int y = Integer.parseInt(n[1]);
-
-            try (FileInputStream in = new FileInputStream(basePath + regionFile)) {
+            try (InputStream in = SplitFlagMap.class.getResourceAsStream("/collision_maps/" + regionFile)) {
+                if (in == null) {
+                    throw new IOException("Collision map file not found: " + regionFile);
+                }
+                
+                String[] n = regionFile.split("_");
+                final int x = Integer.parseInt(n[0]);
+                final int y = Integer.parseInt(n[1]);
                 compressedRegions.put(packPosition(x, y), in.readAllBytes());
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -86,12 +86,17 @@ public class SplitFlagMap {
         return new SplitFlagMap(compressedRegions);
     }
     
-    static class RegionExtent {
-        private final int minX, minY, maxX, maxY;
-        public RegionExtent(int minX, int minY, int maxX, int maxY) { this.minX = minX; this.minY = minY; this.maxX = maxX; this.maxY = maxY; }
-        public int getMinX() { return minX; }
-        public int getMinY() { return minY; }
-        public int getWidth() { return maxX - minX; }
-        public int getHeight() { return maxY - minY; }
+    @RequiredArgsConstructor
+    @Getter
+    public static class RegionExtent {
+        public final int minX, minY, maxX, maxY;
+
+        public int getWidth() {
+            return maxX - minX;
+        }
+
+        public int getHeight() {
+            return maxY - minY;
+        }
     }
 }

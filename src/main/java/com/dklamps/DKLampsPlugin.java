@@ -3,13 +3,17 @@ package com.dklamps;
 import com.dklamps.enums.Area;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
+import com.dklamps.pathfinder.Pathfinder;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -70,6 +74,9 @@ public class DKLampsPlugin extends Plugin
 
 	private DKLampsPanel panel;
 	private NavigationButton navButton;
+    private Pathfinder pathfinder;
+    @Getter
+    private List<WorldPoint> shortestPath = new ArrayList<>();
 
     @Getter
 	private final Map<WorldPoint, GameObject> spawnedLamps = new HashMap<>();
@@ -106,6 +113,12 @@ public class DKLampsPlugin extends Plugin
 
 		clientToolbar.addNavigation(navButton);
 		resetLampStatuses();
+
+        try {
+            pathfinder = new Pathfinder();
+        } catch (IOException e) {
+            log.error("Failed to load pathfinder collision data", e);
+        }
 	}
 
 	@Override
@@ -251,6 +264,7 @@ public class DKLampsPlugin extends Plugin
 					lampStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
 				}
 			}
+            findShortestPath();
 		}
 
 		Set<Lamp> lampsInCurrentArea = DKLampsHelper.getLampsByArea(currentArea);
@@ -287,125 +301,125 @@ public class DKLampsPlugin extends Plugin
 		lastArea = currentArea;
 	}
 
-    @Subscribe
-    public void onChatMessage(ChatMessage event)
-    {
-        if (event.getType() != ChatMessageType.GAMEMESSAGE)
-        {
-            return;
-        }
+    // @Subscribe
+    // public void onChatMessage(ChatMessage event)
+    // {
+    //     if (event.getType() != ChatMessageType.GAMEMESSAGE)
+    //     {
+    //         return;
+    //     }
 
-        Matcher matcher = HINT_PATTERN.matcher(event.getMessage());
+    //     Matcher matcher = HINT_PATTERN.matcher(event.getMessage());
 
-        if (matcher.find())
-        {
-            WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
-            if (playerLocation == null)
-            {
-                return;
-            }
+    //     if (matcher.find())
+    //     {
+    //         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+    //         if (playerLocation == null)
+    //         {
+    //             return;
+    //         }
 
-            String directionHint = matcher.group(1).toLowerCase();
-            String floorHint = matcher.group(2);
+    //         String directionHint = matcher.group(1).toLowerCase();
+    //         String floorHint = matcher.group(2);
 
-            int currentPlane = playerLocation.getPlane();
-            if (floorHint != null)
-            {
-                if (floorHint.contains("upstairs"))
-                {
-                    if (currentPlane == 0)
-                    {
-                        findLampFromHint(directionHint, 1, playerLocation);
-                        findLampFromHint(directionHint, 2, playerLocation);
-                    }
-                    else if (currentPlane == 1)
-                    {
-                        findLampFromHint(directionHint, 2, playerLocation);
-                    }
-                }
-                else if (floorHint.contains("downstairs"))
-                {
-                    if (currentPlane == 2)
-                    {
-                        findLampFromHint(directionHint, 1, playerLocation);
-                        findLampFromHint(directionHint, 0, playerLocation);
-                    }
-                    else if (currentPlane == 1)
-                    {
-                        findLampFromHint(directionHint, 0, playerLocation);
-                    }
-                }
-                else if (floorHint.contains("on the same floor"))
-                {
-                    findLampFromHint(directionHint, currentPlane, playerLocation);
-                }
-                else
-                {
-                    log.warn("Unknown floor hint: {}", floorHint);
-                }
-            }
-        }
-    }
+    //         int currentPlane = playerLocation.getPlane();
+    //         if (floorHint != null)
+    //         {
+    //             if (floorHint.contains("upstairs"))
+    //             {
+    //                 if (currentPlane == 0)
+    //                 {
+    //                     findLampFromHint(directionHint, 1, playerLocation);
+    //                     findLampFromHint(directionHint, 2, playerLocation);
+    //                 }
+    //                 else if (currentPlane == 1)
+    //                 {
+    //                     findLampFromHint(directionHint, 2, playerLocation);
+    //                 }
+    //             }
+    //             else if (floorHint.contains("downstairs"))
+    //             {
+    //                 if (currentPlane == 2)
+    //                 {
+    //                     findLampFromHint(directionHint, 1, playerLocation);
+    //                     findLampFromHint(directionHint, 0, playerLocation);
+    //                 }
+    //                 else if (currentPlane == 1)
+    //                 {
+    //                     findLampFromHint(directionHint, 0, playerLocation);
+    //                 }
+    //             }
+    //             else if (floorHint.contains("on the same floor"))
+    //             {
+    //                 findLampFromHint(directionHint, currentPlane, playerLocation);
+    //             }
+    //             else
+    //             {
+    //                 log.warn("Unknown floor hint: {}", floorHint);
+    //             }
+    //         }
+    //     }
+    // }
 
-    private void findLampFromHint(String directionHint, int targetPlane, WorldPoint playerLocation)
-    {
-        Set<Lamp> candidateLamps = new HashSet<>();
-        for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
-        {
-            if (entry.getKey().getWorldPoint().getPlane() == targetPlane && entry.getValue() == LampStatus.UNKNOWN)
-            {
-                candidateLamps.add(entry.getKey());
-            }
-        }
+    // private void findLampFromHint(String directionHint, int targetPlane, WorldPoint playerLocation)
+    // {
+    //     Set<Lamp> candidateLamps = new HashSet<>();
+    //     for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
+    //     {
+    //         if (entry.getKey().getWorldPoint().getPlane() == targetPlane && entry.getValue() == LampStatus.UNKNOWN)
+    //         {
+    //             candidateLamps.add(entry.getKey());
+    //         }
+    //     }
 
-        if (candidateLamps.isEmpty())
-        {
-            return;
-        }
+    //     if (candidateLamps.isEmpty())
+    //     {
+    //         return;
+    //     }
 
-        Set<Lamp> matchingDirectionLamps = new HashSet<>();
-        for (Lamp lamp : candidateLamps)
-        {
-            int dx = lamp.getWorldPoint().getX() - playerLocation.getX();
-            int dy = lamp.getWorldPoint().getY() - playerLocation.getY();
-            boolean directionMatch = false;
+    //     Set<Lamp> matchingDirectionLamps = new HashSet<>();
+    //     for (Lamp lamp : candidateLamps)
+    //     {
+    //         int dx = lamp.getWorldPoint().getX() - playerLocation.getX();
+    //         int dy = lamp.getWorldPoint().getY() - playerLocation.getY();
+    //         boolean directionMatch = false;
 
-            // TODO: combined directions like "north east"
-            if (directionHint.contains("north") && dy > 0) directionMatch = true;
-            if (directionHint.contains("south") && dy < 0) directionMatch = true;
-            if (directionHint.contains("east") && dx > 0) directionMatch = true;
-            if (directionHint.contains("west") && dx < 0) directionMatch = true;
-            if (!directionHint.contains("north") && !directionHint.contains("south") && !directionHint.contains("east") && !directionHint.contains("west"))
-            {
-                directionMatch = true; // No direction hint (e.g., just "upstairs")
-            }
+    //         // TODO: combined directions like "north east"
+    //         if (directionHint.contains("north") && dy > 0) directionMatch = true;
+    //         if (directionHint.contains("south") && dy < 0) directionMatch = true;
+    //         if (directionHint.contains("east") && dx > 0) directionMatch = true;
+    //         if (directionHint.contains("west") && dx < 0) directionMatch = true;
+    //         if (!directionHint.contains("north") && !directionHint.contains("south") && !directionHint.contains("east") && !directionHint.contains("west"))
+    //         {
+    //             directionMatch = true; // No direction hint (e.g., just "upstairs")
+    //         }
 
 
-            if (directionMatch)
-            {
-                matchingDirectionLamps.add(lamp);
-            }
-        }
+    //         if (directionMatch)
+    //         {
+    //             matchingDirectionLamps.add(lamp);
+    //         }
+    //     }
 
-        // If direction filtering is too strict, fall back to all unknown lamps on that plane
-        if (matchingDirectionLamps.isEmpty())
-        {
-            matchingDirectionLamps.addAll(candidateLamps);
-        }
+    //     // If direction filtering is too strict, fall back to all unknown lamps on that plane
+    //     if (matchingDirectionLamps.isEmpty())
+    //     {
+    //         matchingDirectionLamps.addAll(candidateLamps);
+    //     }
 
-        Lamp closestLamp = matchingDirectionLamps.stream()
-                .min(Comparator.comparingInt(lamp -> lamp.getWorldPoint().distanceTo(playerLocation)))
-                .orElse(null);
+    //     Lamp closestLamp = matchingDirectionLamps.stream()
+    //             .min(Comparator.comparingInt(lamp -> lamp.getWorldPoint().distanceTo(playerLocation)))
+    //             .orElse(null);
 
-        if (closestLamp != null)
-        {
-            lampStatuses.put(closestLamp, LampStatus.BROKEN);
-            if (panel.isVisible())
-            {
-                panel.update();
-            }
-        }
-    }
+    //     if (closestLamp != null)
+    //     {
+    //         lampStatuses.put(closestLamp, LampStatus.BROKEN);
+    //         if (panel.isVisible())
+    //         {
+    //             panel.update();
+    //         }
+    //     }
+    // }
 
 	public void setHintArrow(Lamp lamp)
 	{
@@ -436,6 +450,40 @@ public class DKLampsPlugin extends Plugin
 			client.clearHintArrow();
 		}
 	}
+
+    private void findShortestPath()
+    {
+        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        if (playerLocation == null)
+        {
+            return;
+        }
+
+        if (brokenLamps.isEmpty())
+        {
+            shortestPath.clear();
+            return;
+        }
+
+        List<WorldPoint> bestPath = null;
+
+        for (Lamp lamp : brokenLamps)
+        {
+            List<WorldPoint> currentPath = pathfinder.findPath(playerLocation, lamp.getWorldPoint());
+
+            if (currentPath == null || currentPath.isEmpty())
+            {
+                continue;
+            }
+
+            if (bestPath == null || currentPath.size() < bestPath.size())
+            {
+                bestPath = currentPath;
+            }
+        }
+        
+        shortestPath = (bestPath != null) ? bestPath : new ArrayList<>();
+    }
 
 
 	@Provides
