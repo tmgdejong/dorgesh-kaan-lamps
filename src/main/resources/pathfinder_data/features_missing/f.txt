@@ -1,0 +1,670 @@
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90001   
+Enter the X coordinate of the tile INSIDE feature 90001: 2700
+Enter the Y coordinate of the tile INSIDE feature 90001: 5262
+Enter the Destination Feature ID (the room you are going 'to'): 90002
+Direction from origin to destination (N/E/S/W): E
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5762,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5762",
+  "destination": {
+    "plane": 0,
+    "x": 2701,
+    "y": 5262,
+    "f": "0_90002"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2700,
+    "y": 5262,
+    "f": "0_90001"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5763,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5763",
+  "destination": {
+    "plane": 0,
+    "x": 2700,
+    "y": 5262,
+    "f": "0_90001"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2701,
+    "y": 5262,
+    "f": "0_90002"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90002
+Enter the X coordinate of the tile INSIDE feature 90002: 2706
+Enter the Y coordinate of the tile INSIDE feature 90002: 5265
+Enter the Destination Feature ID (the room you are going 'to'): 14717
+Direction from origin to destination (N/E/S/W): E
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5764,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5764",
+  "destination": {
+    "plane": 0,
+    "x": 2707,
+    "y": 5265,
+    "f": "0_14717"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2706,
+    "y": 5265,
+    "f": "0_90002"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5765,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5765",
+  "destination": {
+    "plane": 0,
+    "x": 2706,
+    "y": 5265,
+    "f": "0_90002"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2707,
+    "y": 5265,
+    "f": "0_14717"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90004
+Enter the X coordinate of the tile INSIDE feature 90004: 2738
+Enter the Y coordinate of the tile INSIDE feature 90004: 5264
+Enter the Destination Feature ID (the room you are going 'to'): 14717
+Direction from origin to destination (N/E/S/W): W
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5766,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5766",
+  "destination": {
+    "plane": 0,
+    "x": 2737,
+    "y": 5264,
+    "f": "0_14717"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2738,
+    "y": 5264,
+    "f": "0_90004"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5767,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5767",
+  "destination": {
+    "plane": 0,
+    "x": 2738,
+    "y": 5264,
+    "f": "0_90004"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2737,
+    "y": 5264,
+    "f": "0_14717"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90003
+Enter the X coordinate of the tile INSIDE feature 90003: 2742
+Enter the Y coordinate of the tile INSIDE feature 90003: 5260
+Enter the Destination Feature ID (the room you are going 'to'): 90004
+Direction from origin to destination (N/E/S/W): N
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5768,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5768",
+  "destination": {
+    "plane": 0,
+    "x": 2742,
+    "y": 5261,
+    "f": "0_90004"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2742,
+    "y": 5260,
+    "f": "0_90003"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5769,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5769",
+  "destination": {
+    "plane": 0,
+    "x": 2742,
+    "y": 5260,
+    "f": "0_90003"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2742,
+    "y": 5261,
+    "f": "0_90004"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90005
+Enter the X coordinate of the tile INSIDE feature 90005: 2737
+Enter the Y coordinate of the tile INSIDE feature 90005: 5291
+Enter the Destination Feature ID (the room you are going 'to'): 14584
+Direction from origin to destination (N/E/S/W): W
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5770,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5770",
+  "destination": {
+    "plane": 0,
+    "x": 2736,
+    "y": 5291,
+    "f": "0_14584"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2737,
+    "y": 5291,
+    "f": "0_90005"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5771,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5771",
+  "destination": {
+    "plane": 0,
+    "x": 2737,
+    "y": 5291,
+    "f": "0_90005"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2736,
+    "y": 5291,
+    "f": "0_14584"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90006
+Enter the X coordinate of the tile INSIDE feature 90006: 2699
+Enter the Y coordinate of the tile INSIDE feature 90006: 5297
+Enter the Destination Feature ID (the room you are going 'to'): 14584
+Direction from origin to destination (N/E/S/W): E
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5772,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5772",
+  "destination": {
+    "plane": 0,
+    "x": 2700,
+    "y": 5297,
+    "f": "0_14584"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2699,
+    "y": 5297,
+    "f": "0_90006"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5773,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5773",
+  "destination": {
+    "plane": 0,
+    "x": 2699,
+    "y": 5297,
+    "f": "0_90006"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2700,
+    "y": 5297,
+    "f": "0_14584"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90006
+Enter the X coordinate of the tile INSIDE feature 90006: 2694
+Enter the Y coordinate of the tile INSIDE feature 90006: 5293
+Enter the Destination Feature ID (the room you are going 'to'): 14584
+Direction from origin to destination (N/E/S/W): S
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5774,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5774",
+  "destination": {
+    "plane": 0,
+    "x": 2694,
+    "y": 5292,
+    "f": "0_14584"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2694,
+    "y": 5293,
+    "f": "0_90006"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5775,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5775",
+  "destination": {
+    "plane": 0,
+    "x": 2694,
+    "y": 5293,
+    "f": "0_90006"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2694,
+    "y": 5292,
+    "f": "0_14584"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90007
+Enter the X coordinate of the tile INSIDE feature 90007: 2746
+Enter the Y coordinate of the tile INSIDE feature 90007: 5331
+Enter the Destination Feature ID (the room you are going 'to'): 14584
+Direction from origin to destination (N/E/S/W): N
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5776,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5776",
+  "destination": {
+    "plane": 0,
+    "x": 2746,
+    "y": 5332,
+    "f": "0_14584"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2746,
+    "y": 5331,
+    "f": "0_90007"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5777,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5777",
+  "destination": {
+    "plane": 0,
+    "x": 2746,
+    "y": 5331,
+    "f": "0_90007"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2746,
+    "y": 5332,
+    "f": "0_14584"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90008
+Enter the X coordinate of the tile INSIDE feature 90008: 2774
+Enter the Y coordinate of the tile INSIDE feature 90008: 5339
+Enter the Destination Feature ID (the room you are going 'to'): 14584
+Direction from origin to destination (N/E/S/W): S
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5778,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5778",
+  "destination": {
+    "plane": 0,
+    "x": 2774,
+    "y": 5338,
+    "f": "0_14584"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2774,
+    "y": 5339,
+    "f": "0_90008"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5779,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5779",
+  "destination": {
+    "plane": 0,
+    "x": 2774,
+    "y": 5339,
+    "f": "0_90008"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2774,
+    "y": 5338,
+    "f": "0_14584"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 0
+Enter the Origin Feature ID (the room you are 'in'): 90009
+Enter the X coordinate of the tile INSIDE feature 90009: 2741
+Enter the Y coordinate of the tile INSIDE feature 90009: 5362
+Enter the Destination Feature ID (the room you are going 'to'): 14584
+Direction from origin to destination (N/E/S/W): N
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5780,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5780",
+  "destination": {
+    "plane": 0,
+    "x": 2741,
+    "y": 5363,
+    "f": "0_14584"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2741,
+    "y": 5362,
+    "f": "0_90009"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5781,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5781",
+  "destination": {
+    "plane": 0,
+    "x": 2741,
+    "y": 5362,
+    "f": "0_90009"
+  },
+  "origin": {
+    "plane": 0,
+    "x": 2741,
+    "y": 5363,
+    "f": "0_14584"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 1
+Enter the Origin Feature ID (the room you are 'in'): 90010
+Enter the X coordinate of the tile INSIDE feature 90010: 2740
+Enter the Y coordinate of the tile INSIDE feature 90010: 5338
+Enter the Destination Feature ID (the room you are going 'to'): 8026
+Direction from origin to destination (N/E/S/W): W
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5782,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5782",
+  "destination": {
+    "plane": 1,
+    "x": 2739,
+    "y": 5338,
+    "f": "1_8026"
+  },
+  "origin": {
+    "plane": 1,
+    "x": 2740,
+    "y": 5338,
+    "f": "1_90010"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5783,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5783",
+  "destination": {
+    "plane": 1,
+    "x": 2740,
+    "y": 5338,
+    "f": "1_90010"
+  },
+  "origin": {
+    "plane": 1,
+    "x": 2739,
+    "y": 5338,
+    "f": "1_8026"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 1
+Enter the Origin Feature ID (the room you are 'in'): 90011
+Enter the X coordinate of the tile INSIDE feature 90011: 2697
+Enter the Y coordinate of the tile INSIDE feature 90011: 5343
+Enter the Destination Feature ID (the room you are going 'to'): 8026
+Direction from origin to destination (N/E/S/W): E
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5784,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5784",
+  "destination": {
+    "plane": 1,
+    "x": 2698,
+    "y": 5343,
+    "f": "1_8026"
+  },
+  "origin": {
+    "plane": 1,
+    "x": 2697,
+    "y": 5343,
+    "f": "1_90011"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5785,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5785",
+  "destination": {
+    "plane": 1,
+    "x": 2697,
+    "y": 5343,
+    "f": "1_90011"
+  },
+  "origin": {
+    "plane": 1,
+    "x": 2698,
+    "y": 5343,
+    "f": "1_8026"
+  }
+}
+
+Add these two links to both navigation and feature table files? (y/n): y
+Navigation links prepared.
+Feature table links prepared.
+Add another door? (y/n): y
+
+--- Adding a New Door Connection ---
+Enter plane/floor (0, 1, or 2): 1
+Enter the Origin Feature ID (the room you are 'in'): 90012
+Enter the X coordinate of the tile INSIDE feature 90012: 2701
+Enter the Y coordinate of the tile INSIDE feature 90012: 5354
+Enter the Destination Feature ID (the room you are going 'to'): 8026
+Direction from origin to destination (N/E/S/W): N
+
+--- Generated Links ---
+Forward Link (Origin -> Destination):
+{
+  "rowNumber": 5786,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5786",
+  "destination": {
+    "plane": 1,
+    "x": 2701,
+    "y": 5355,
+    "f": "1_8026"
+  },
+  "origin": {
+    "plane": 1,
+    "x": 2701,
+    "y": 5354,
+    "f": "1_90012"
+  }
+}
+
+Backward Link (Destination -> Origin):
+{
+  "rowNumber": 5787,
+  "groupName": "Door (actions = [\"Open\"])",
+  "no-repeat-key": "5787",
+  "destination": {
+    "plane": 1,
+    "x": 2701,
+    "y": 5354,
+    "f": "1_90012"
+  },
+  "origin": {
+    "plane": 1,
+    "x": 2701,
+    "y": 5355,
+    "f": "1_8026"
+  }
+}
