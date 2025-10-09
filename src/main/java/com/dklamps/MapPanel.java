@@ -14,7 +14,6 @@ import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import com.dklamps.enums.DisplayFloorTypes;
@@ -45,9 +44,6 @@ public class MapPanel extends JPanel {
         this.mapImage = ImageUtil.loadImageResource(getClass(), "/map_p" + plane + ".png");
 
         setLayout(new BorderLayout());
-
-        // JLabel titleLabel = new JLabel(title, JLabel.CENTER);
-        // add(titleLabel, BorderLayout.NORTH);
 
         JPanel mapDisplay = new MapDisplay();
         add(mapDisplay, BorderLayout.CENTER);

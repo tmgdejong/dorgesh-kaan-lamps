@@ -1,6 +1,8 @@
 package com.dklamps.pathfinder;
 
 import com.dklamps.enums.Transport;
+import com.dklamps.enums.Direction;
+import com.dklamps.enums.Lamp;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,14 +14,15 @@ import java.util.Set;
 import net.runelite.api.coords.WorldPoint;
 
 public class Pathfinder {
-    private static final int MAX_ITERATIONS = 10000; // Prevent infinite loops
-    private static final int MAX_PATH_LENGTH = 1000; // Reasonable max path length
+    private static final int MAX_ITERATIONS = 10000; // Reasonable limit to prevent hangs
+    private static final int MAX_PATH_LENGTH = 512; // Reasonable path length limit
 
-    private final SplitFlagMap map;
+    private final CollisionMap collisionMap;
     private final Map<WorldPoint, List<Transport>> transports;
 
     public Pathfinder() throws IOException {
-        this.map = SplitFlagMap.loadFromResources();
+        SplitFlagMap map = SplitFlagMap.loadFromResources();
+        this.collisionMap = new CollisionMap(map);
         this.transports = new HashMap<>();
 
         for (Transport transport : Transport.values()) {
@@ -28,6 +31,10 @@ public class Pathfinder {
     }
 
     public List<WorldPoint> findPath(WorldPoint start, WorldPoint end) {
+        return findPathInternal(start, end, MAX_ITERATIONS);
+    }
+    
+    private List<WorldPoint> findPathInternal(WorldPoint start, WorldPoint end, int maxIterations) {
         // Basic validation
         if (start == null || end == null) {
             return new ArrayList<>();
@@ -43,7 +50,47 @@ public class Pathfinder {
         // Check if destinations are too far apart (rough distance check)
         int roughDistance = Math.abs(start.getX() - end.getX()) + Math.abs(start.getY() - end.getY());
         if (roughDistance > MAX_PATH_LENGTH) {
+            System.out.println("DEBUG: Pathfinding rejected - too far apart: " + roughDistance + " > " + MAX_PATH_LENGTH);
             return new ArrayList<>(); // Destination too far
+        }
+                
+        Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+        
+        // Find the lamp at this location to get unreachable directions
+        Lamp targetLamp = null;
+        for (Lamp lamp : Lamp.values()) {
+            if (lamp.getWorldPoint().equals(end)) {
+                targetLamp = lamp;
+                break;
+            }
+        }
+        
+        WorldPoint bestTarget = null;
+        int closestDistance = Integer.MAX_VALUE;
+        
+        for (Direction direction : cardinalDirections) {
+            // Skip this direction if it's marked as unreachable for this lamp
+            if (targetLamp != null && targetLamp.getUnreachableDirections().contains(direction)) {
+                continue;
+            }
+            
+            WorldPoint nearby = new WorldPoint(end.getX() + direction.getX(), end.getY() + direction.getY(), end.getPlane());
+            List<Node> nearbyNeighbors = getNeighbors(new Node(nearby));
+            if (!nearbyNeighbors.isEmpty()) {
+                // Calculate distance from player to this adjacent tile
+                int distance = Math.abs(start.getX() - nearby.getX()) + Math.abs(start.getY() - nearby.getY());
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    bestTarget = nearby;
+                }
+            }
+        }
+        
+        if (bestTarget != null) {
+            end = bestTarget; // Use closest walkable tile as target
+        } else {
+            System.out.println("DEBUG: No walkable directions found for lamp at " + end);
+            return new ArrayList<>();
         }
 
         PriorityQueue<Node> openSet = new PriorityQueue<>();
@@ -56,7 +103,7 @@ public class Pathfinder {
         startNode.setFCost(startNode.getHCost());
         openSet.add(startNode);
 
-        while (!openSet.isEmpty() && iterations < MAX_ITERATIONS) {
+        while (!openSet.isEmpty() && iterations < maxIterations) {
             iterations++;
 
             Node currentNode = openSet.poll();
@@ -69,6 +116,18 @@ public class Pathfinder {
                 }
                 return path;
             }
+            
+            // Early termination for very short paths - they're likely optimal
+            if (currentNode.getGCost() <= 5) {
+                int directDistance = Math.abs(currentNode.getWorldPoint().getX() - end.getX()) + 
+                                   Math.abs(currentNode.getWorldPoint().getY() - end.getY());
+                if (directDistance <= 2) {
+                    // We're very close, this path is likely good enough
+                    List<WorldPoint> path = currentNode.getPath();
+                    path.add(end); // Add the destination
+                    return path;
+                }
+            }
 
             closedSet.add(currentNode.getWorldPoint());
 
@@ -77,10 +136,13 @@ public class Pathfinder {
                     continue;
                 }
 
-                // A transport's cost is the distance between the origin and destination,
-                // plus a penalty to make walking preferred over short distances
-                int transportCost = neighbor.getParent() != null
-                        && transports.containsKey(neighbor.getParent().getWorldPoint()) ? 5 : 1;
+                int transportCost = 1;
+                if (transports.containsKey(currentNode.getWorldPoint())) {
+                    for (Transport transport : transports.get(currentNode.getWorldPoint())) {
+                        transportCost = transport.getDuration();
+                        break;
+                    }
+                }
                 int tentativeGCost = currentNode.getGCost() + transportCost;
 
                 // Safety check: abandon paths that are getting too long
@@ -101,48 +163,33 @@ public class Pathfinder {
             }
         }
 
+        // Debug: Log why pathfinding failed
+        if (iterations >= maxIterations) {
+            System.out.println("DEBUG: Pathfinding hit MAX_ITERATIONS (" + maxIterations + ")");
+        } else {
+            System.out.println("DEBUG: Pathfinding failed - openSet empty after " + iterations + " iterations");
+        }
         return new ArrayList<>(); // Return empty list if no path is found
     }
 
     private List<Node> getNeighbors(Node node) {
-        List<Node> neighbors = new ArrayList<>();
-        WorldPoint p = node.getWorldPoint();
-
-        // Walking neighbors
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                if (dx == 0 && dy == 0) {
-                    continue;
-                }
-
-                int checkX = p.getX() + dx;
-                int checkY = p.getY() + dy;
-
-                if (isWalkable(checkX, checkY, p.getPlane())) {
-                    neighbors.add(new Node(new WorldPoint(checkX, checkY, p.getPlane())));
-                }
-            }
-        }
-
-        // Transport neighbors
-        if (transports.containsKey(p)) {
-            for (Transport transport : transports.get(p)) {
-                neighbors.add(new Node(transport.getDestination()));
-            }
-        }
-
+        List<Node> neighbors = collisionMap.getValidNeighbors(node, transports);
         return neighbors;
     }
 
-    private boolean isWalkable(int x, int y, int z) {
-        return !map.get(x, y, z, 1);
-    }
-
     private int calculateHeuristic(WorldPoint from, WorldPoint to) {
-        // Manhattan distance, but also factor in plane distance
-        int distance = Math.abs(from.getX() - to.getX()) + Math.abs(from.getY() - to.getY());
+        // Simple Manhattan distance - more reliable than WorldPointUtil
+        int dx = Math.abs(from.getX() - to.getX());
+        int dy = Math.abs(from.getY() - to.getY());
+        int distance = dx + dy;
+        
+        // Add penalty for plane changes
         if (from.getPlane() != to.getPlane()) {
-            distance += 10; // Add a penalty for changing floors
+            // Higher penalty that scales with horizontal distance
+            // If lamp is directly above/below (dx+dy small), penalty is significant
+            // If lamp is far horizontally, penalty becomes less significant relative to distance
+            int planeChangePenalty = Math.max(10, (dx + dy) / 4);
+            distance += planeChangePenalty;
         }
         return distance;
     }

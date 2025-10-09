@@ -96,7 +96,7 @@ public class DKLampsPlugin extends Plugin {
     private Lamp lastLoggedClosestLamp = null;
     private CompletableFuture<Void> currentClosestLampTask;
     private long lastClosestLampCalculation = 0;
-    private static final long CLOSEST_LAMP_COOLDOWN_MS = 600; // Update every tick (600ms)
+    private static final long CLOSEST_LAMP_COOLDOWN_MS = 600; // Update every 5 ticks (3 seconds) - matches original cutoff
 
     @Override
     protected void startUp() throws Exception {
@@ -333,11 +333,14 @@ public class DKLampsPlugin extends Plugin {
 
                     try {
                         List<WorldPoint> path = pathfinder.findPath(playerPos, lamp.getWorldPoint());
+                        log.debug("Pathfinding to {}: found path with {} tiles", lamp.name(), 
+                                path != null ? path.size() : "null");
 
                         if (path != null && !path.isEmpty() && path.size() < shortestPathLength) {
                             closestLamp = lamp;
                             bestPath = new ArrayList<>(path);
                             shortestPathLength = path.size();
+                            log.debug("New best path to {}: {} tiles", lamp.name(), path.size());
                         }
                     } catch (Exception e) {
                         log.debug("Failed to find path to lamp {}: {}", lamp.name(), e.getMessage());
@@ -353,6 +356,7 @@ public class DKLampsPlugin extends Plugin {
                             bestPath.add(playerPos);
                             bestPath.add(lamp.getWorldPoint());
                             shortestPathLength = fallbackDistance;
+                            log.info("Using fallback path to {} with distance {}", lamp.name(), fallbackDistance);
                         }
                     }
                 }
@@ -362,9 +366,58 @@ public class DKLampsPlugin extends Plugin {
                 final List<WorldPoint> finalPath = bestPath;
                 final int finalDistance = shortestPathLength;
 
+                // If no pathfinding worked, fall back to closest lamp by distance
+                if (finalClosestLamp == null && !lampsToCheck.isEmpty()) {
+                    Lamp fallbackLamp = lampsToCheck.stream()
+                            .min((l1, l2) -> {
+                                int dist1 = l1.getWorldPoint().distanceTo(playerPos);
+                                int dist2 = l2.getWorldPoint().distanceTo(playerPos);
+                                if (l1.getWorldPoint().getPlane() != playerPos.getPlane()) dist1 += 32;
+                                if (l2.getWorldPoint().getPlane() != playerPos.getPlane()) dist2 += 32;
+                                return Integer.compare(dist1, dist2);
+                            })
+                            .orElse(null);
+                    
+                    if (fallbackLamp != null) {
+                        List<WorldPoint> fallbackPath = new ArrayList<>();
+                        fallbackPath.add(playerPos);
+                        fallbackPath.add(fallbackLamp.getWorldPoint());
+                        log.info("All pathfinding failed, using direct path fallback to {}", fallbackLamp.name());
+                        
+                        // Use the fallback
+                        final Lamp finalFallbackLamp = fallbackLamp;
+                        final List<WorldPoint> finalFallbackPath = fallbackPath;
+                        
+                        if (!Thread.currentThread().isInterrupted()) {
+                            shortestPath = finalFallbackPath;
+                            log.debug("Updated shortestPath with {} tiles for fallback lamp {}", 
+                                    shortestPath.size(), finalFallbackLamp.name());
+                            
+                            if (!finalFallbackLamp.equals(lastLoggedClosestLamp)) {
+                                WorldPoint lampLocation = finalFallbackLamp.getWorldPoint();
+                                String planeInfo = lampLocation.getPlane() == playerPos.getPlane() ? "same floor"
+                                        : String.format("floor %d (you're on floor %d)", lampLocation.getPlane(),
+                                                playerPos.getPlane());
+
+                                log.info("Closest broken lamp (fallback): {} at ({}, {}) on {} - Direct distance: {} tiles",
+                                        finalFallbackLamp.name(),
+                                        lampLocation.getX(),
+                                        lampLocation.getY(),
+                                        planeInfo,
+                                        lampLocation.distanceTo(playerPos));
+
+                                lastLoggedClosestLamp = finalFallbackLamp;
+                            }
+                        }
+                        return;
+                    }
+                }
+
                 if (!Thread.currentThread().isInterrupted() && finalClosestLamp != null) {
                     // Update the path for overlay rendering
                     shortestPath = finalPath != null ? finalPath : new ArrayList<>();
+                    log.debug("Updated shortestPath with {} tiles for lamp {}", 
+                            shortestPath.size(), finalClosestLamp.name());
                     // Only log if the closest lamp changed
                     if (!finalClosestLamp.equals(lastLoggedClosestLamp)) {
                         WorldPoint lampLocation = finalClosestLamp.getWorldPoint();

@@ -41,7 +41,7 @@ public interface DKLampsConfig extends Config{
 		position = 4
 	)
 	default Color pathColor() {
-		return Color.CYAN;
+		return new Color(255,102,102);
 	}
 
 	@ConfigSection(

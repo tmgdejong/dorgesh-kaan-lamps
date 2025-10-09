@@ -1,11 +1,11 @@
 package com.dklamps.enums;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import net.runelite.api.coords.WorldPoint;
+import java.util.List;
+import java.util.Arrays;
 
 @Getter
-@RequiredArgsConstructor
 public enum Lamp {
 	// Plane 0 South
 	P0_S_LAMP_1(0, 22988, new WorldPoint(2738, 5283, 0), Area.P0_S, "Group of rooms just SE of the market"),
@@ -44,7 +44,7 @@ public enum Lamp {
 	P1_S_LAMP_3(2, 22994, new WorldPoint(2737, 5294, 1), Area.P1_S, "Eastern house"),
 	P1_S_LAMP_4(3, 22999, new WorldPoint(2741, 5283, 1), Area.P1_S, "Eastern house"),
 	P1_S_LAMP_5(4, 23005, new WorldPoint(2695, 5294, 1), Area.P1_S, "Western house"),
-	P1_S_LAMP_6(10, 22986, new WorldPoint(2736, 5272, 1), Area.P1_S, "Upstairs of the eastern house in the south part of the city"),
+	P1_S_LAMP_6(10, 22986, new WorldPoint(2736, 5272, 1), Area.P1_S, "Upstairs of the eastern house in the south part of the city", Direction.NORTH),
 	P1_S_LAMP_7(11, 23000, new WorldPoint(2731, 5272, 1), Area.P1_S, "Upstairs of the eastern house in the south part of the city"),
 	P1_S_LAMP_8(12, 23001, new WorldPoint(2736, 5278, 1), Area.P1_S, "Upstairs of the eastern house in the south part of the city"),
 	P1_S_LAMP_9(13, 23002, new WorldPoint(2709, 5270, 1), Area.P1_S, "Upstairs of the house west of the wire machine"),
@@ -88,4 +88,18 @@ public enum Lamp {
 	private final WorldPoint worldPoint;
 	private final Area area;
 	private final String description;
+	private final List<Direction> unreachableDirections;
+
+	Lamp(int bitPosition, int objectId, WorldPoint worldPoint, Area area, String description) {
+		this(bitPosition, objectId, worldPoint, area, description, new Direction[0]);
+	}
+
+	Lamp(int bitPosition, int objectId, WorldPoint worldPoint, Area area, String description, Direction... unreachableDirections) {
+		this.bitPosition = bitPosition;
+		this.objectId = objectId;
+		this.worldPoint = worldPoint;
+		this.area = area;
+		this.description = description;
+		this.unreachableDirections = Arrays.asList(unreachableDirections);
+	}
 }
