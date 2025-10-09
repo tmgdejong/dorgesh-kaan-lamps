@@ -16,19 +16,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.WallObject;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
@@ -55,7 +54,6 @@ public class DKLampsPlugin extends Plugin
 {
 	private static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
 	private static final int WIRE_RESPAWN_TICKS = 8;
-    private static final Pattern HINT_PATTERN = Pattern.compile("There is another broken lamp nearby, (.+?) of here (.+?)\\.");
 
 	@Inject
 	private Client client;
@@ -72,12 +70,13 @@ public class DKLampsPlugin extends Plugin
     @Inject
 	private ClientToolbar clientToolbar;
 
-	private DKLampsPanel panel;
+    private DKLampsPanel panel;
 	private NavigationButton navButton;
     private Pathfinder pathfinder;
+    private ExecutorService pathfindingExecutor;
     @Getter
     private List<WorldPoint> shortestPath = new ArrayList<>();
-
+    
     @Getter
 	private final Map<WorldPoint, GameObject> spawnedLamps = new HashMap<>();
     @Getter
@@ -87,7 +86,7 @@ public class DKLampsPlugin extends Plugin
 	@Getter
 	private GameObject wireMachine;
 
-	@Getter
+    @Getter
 	private Set<Lamp> brokenLamps = new HashSet<>();
 	private Set<Lamp> previouslyBrokenLamps = new HashSet<>();
 	private Area lastArea = null;
@@ -95,7 +94,12 @@ public class DKLampsPlugin extends Plugin
 	private Instant wireRespawnTime;
 
     @Getter
-	private final Map<Lamp, LampStatus> lampStatuses = new EnumMap<>(Lamp.class);
+    private final Map<Lamp, LampStatus> lampStatuses = new EnumMap<>(Lamp.class);
+    
+    private Lamp lastLoggedClosestLamp = null;
+    private CompletableFuture<Void> currentClosestLampTask;
+    private long lastClosestLampCalculation = 0;
+    private static final long CLOSEST_LAMP_COOLDOWN_MS = 600; // Update every tick (600ms)
 
     @Override
 	protected void startUp() throws Exception
@@ -114,6 +118,12 @@ public class DKLampsPlugin extends Plugin
 		clientToolbar.addNavigation(navButton);
 		resetLampStatuses();
 
+        pathfindingExecutor = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "DKLamps-Pathfinder");
+            t.setDaemon(true);
+            return t;
+        });
+
         try {
             pathfinder = new Pathfinder();
         } catch (IOException e) {
@@ -127,6 +137,14 @@ public class DKLampsPlugin extends Plugin
 		log.info("Dorgesh-Kaan Lamps stopped!");
 		overlayManager.remove(overlay);
 		clientToolbar.removeNavigation(navButton);
+        
+        if (currentClosestLampTask != null) {
+            currentClosestLampTask.cancel(true);
+        }
+        if (pathfindingExecutor != null) {
+            pathfindingExecutor.shutdown();
+        }
+        
 		brokenLamps.clear();
 		client.clearHintArrow();
         doors.clear();
@@ -219,6 +237,7 @@ public class DKLampsPlugin extends Plugin
 			if (gameStateChanged.getGameState() != GameState.LOADING)
 			{
 				brokenLamps.clear();
+                lastLoggedClosestLamp = null;
 				resetLampStatuses();
 			}
 		}
@@ -264,7 +283,6 @@ public class DKLampsPlugin extends Plugin
 					lampStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
 				}
 			}
-            findShortestPath();
 		}
 
 		Set<Lamp> lampsInCurrentArea = DKLampsHelper.getLampsByArea(currentArea);
@@ -297,129 +315,142 @@ public class DKLampsPlugin extends Plugin
 			client.clearHintArrow();
 		}
 
+        logClosestLamp();
+
 		previouslyBrokenLamps = new HashSet<>(brokenLamps);
 		lastArea = currentArea;
 	}
 
-    // @Subscribe
-    // public void onChatMessage(ChatMessage event)
-    // {
-    //     if (event.getType() != ChatMessageType.GAMEMESSAGE)
-    //     {
-    //         return;
-    //     }
+    private void logClosestLamp()
+    {
+        // Get all broken lamps from lampStatuses instead of just current area
+        Set<Lamp> allBrokenLamps = new HashSet<>();
+        for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
+        {
+            if (entry.getValue() == LampStatus.BROKEN)
+            {
+                allBrokenLamps.add(entry.getKey());
+            }
+        }
+        
+        if (allBrokenLamps.isEmpty())
+        {
+            if (lastLoggedClosestLamp != null)
+            {
+                log.info("No broken lamps found");
+                lastLoggedClosestLamp = null;
+            }
+            shortestPath.clear();
+            return;
+        }
 
-    //     Matcher matcher = HINT_PATTERN.matcher(event.getMessage());
+        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        if (playerLocation == null || pathfinder == null || pathfindingExecutor == null)
+        {
+            return;
+        }
 
-    //     if (matcher.find())
-    //     {
-    //         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
-    //         if (playerLocation == null)
-    //         {
-    //             return;
-    //         }
+        // Throttle closest lamp calculation
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastClosestLampCalculation < CLOSEST_LAMP_COOLDOWN_MS)
+        {
+            return;
+        }
+        lastClosestLampCalculation = currentTime;
 
-    //         String directionHint = matcher.group(1).toLowerCase();
-    //         String floorHint = matcher.group(2);
+        // Cancel any existing closest lamp calculation
+        if (currentClosestLampTask != null && !currentClosestLampTask.isDone())
+        {
+            currentClosestLampTask.cancel(true);
+        }
 
-    //         int currentPlane = playerLocation.getPlane();
-    //         if (floorHint != null)
-    //         {
-    //             if (floorHint.contains("upstairs"))
-    //             {
-    //                 if (currentPlane == 0)
-    //                 {
-    //                     findLampFromHint(directionHint, 1, playerLocation);
-    //                     findLampFromHint(directionHint, 2, playerLocation);
-    //                 }
-    //                 else if (currentPlane == 1)
-    //                 {
-    //                     findLampFromHint(directionHint, 2, playerLocation);
-    //                 }
-    //             }
-    //             else if (floorHint.contains("downstairs"))
-    //             {
-    //                 if (currentPlane == 2)
-    //                 {
-    //                     findLampFromHint(directionHint, 1, playerLocation);
-    //                     findLampFromHint(directionHint, 0, playerLocation);
-    //                 }
-    //                 else if (currentPlane == 1)
-    //                 {
-    //                     findLampFromHint(directionHint, 0, playerLocation);
-    //                 }
-    //             }
-    //             else if (floorHint.contains("on the same floor"))
-    //             {
-    //                 findLampFromHint(directionHint, currentPlane, playerLocation);
-    //             }
-    //             else
-    //             {
-    //                 log.warn("Unknown floor hint: {}", floorHint);
-    //             }
-    //         }
-    //     }
-    // }
+        // Create a snapshot for the background thread
+        final WorldPoint playerPos = playerLocation;
+        final Set<Lamp> lampsToCheck = new HashSet<>(allBrokenLamps);
 
-    // private void findLampFromHint(String directionHint, int targetPlane, WorldPoint playerLocation)
-    // {
-    //     Set<Lamp> candidateLamps = new HashSet<>();
-    //     for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
-    //     {
-    //         if (entry.getKey().getWorldPoint().getPlane() == targetPlane && entry.getValue() == LampStatus.UNKNOWN)
-    //         {
-    //             candidateLamps.add(entry.getKey());
-    //         }
-    //     }
+        currentClosestLampTask = CompletableFuture.runAsync(() -> {
+            try {
+                Lamp closestLamp = null;
+                List<WorldPoint> bestPath = null;
+                int shortestPathLength = Integer.MAX_VALUE;
 
-    //     if (candidateLamps.isEmpty())
-    //     {
-    //         return;
-    //     }
+                for (Lamp lamp : lampsToCheck)
+                {
+                    // Check if task was cancelled
+                    if (Thread.currentThread().isInterrupted())
+                    {
+                        return;
+                    }
 
-    //     Set<Lamp> matchingDirectionLamps = new HashSet<>();
-    //     for (Lamp lamp : candidateLamps)
-    //     {
-    //         int dx = lamp.getWorldPoint().getX() - playerLocation.getX();
-    //         int dy = lamp.getWorldPoint().getY() - playerLocation.getY();
-    //         boolean directionMatch = false;
+                    try {
+                        List<WorldPoint> path = pathfinder.findPath(playerPos, lamp.getWorldPoint());
 
-    //         // TODO: combined directions like "north east"
-    //         if (directionHint.contains("north") && dy > 0) directionMatch = true;
-    //         if (directionHint.contains("south") && dy < 0) directionMatch = true;
-    //         if (directionHint.contains("east") && dx > 0) directionMatch = true;
-    //         if (directionHint.contains("west") && dx < 0) directionMatch = true;
-    //         if (!directionHint.contains("north") && !directionHint.contains("south") && !directionHint.contains("east") && !directionHint.contains("west"))
-    //         {
-    //             directionMatch = true; // No direction hint (e.g., just "upstairs")
-    //         }
+                        if (path != null && !path.isEmpty() && path.size() < shortestPathLength)
+                        {
+                            closestLamp = lamp;
+                            bestPath = new ArrayList<>(path);
+                            shortestPathLength = path.size();
+                        }
+                    } catch (Exception e) {
+                        log.debug("Failed to find path to lamp {}: {}", lamp.name(), e.getMessage());
+                        // Fallback to distance calculation for this lamp
+                        int fallbackDistance = lamp.getWorldPoint().distanceTo(playerPos);
+                        if (lamp.getWorldPoint().getPlane() != playerPos.getPlane()) {
+                            fallbackDistance += 32;
+                        }
+                        if (fallbackDistance < shortestPathLength) {
+                            closestLamp = lamp;
+                            // Create a simple direct path for fallback
+                            bestPath = new ArrayList<>();
+                            bestPath.add(playerPos);
+                            bestPath.add(lamp.getWorldPoint());
+                            shortestPathLength = fallbackDistance;
+                        }
+                    }
+                }
 
+                // Update the result on the main thread
+                final Lamp finalClosestLamp = closestLamp;
+                final List<WorldPoint> finalPath = bestPath;
+                final int finalDistance = shortestPathLength;
+                
+                if (!Thread.currentThread().isInterrupted() && finalClosestLamp != null)
+                {
+                    // Update the path for overlay rendering
+                    shortestPath = finalPath != null ? finalPath : new ArrayList<>();
+                    // Only log if the closest lamp changed
+                    if (!finalClosestLamp.equals(lastLoggedClosestLamp))
+                    {
+                        WorldPoint lampLocation = finalClosestLamp.getWorldPoint();
+                        String planeInfo = lampLocation.getPlane() == playerPos.getPlane() ? 
+                            "same floor" : 
+                            String.format("floor %d (you're on floor %d)", lampLocation.getPlane(), playerPos.getPlane());
+                        
+                        log.info("Closest broken lamp (pathfinding): {} at ({}, {}) on {} - Path length: {} tiles", 
+                            finalClosestLamp.name(), 
+                            lampLocation.getX(), 
+                            lampLocation.getY(), 
+                            planeInfo,
+                            finalDistance);
+                        
+                        lastLoggedClosestLamp = finalClosestLamp;
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error during closest lamp calculation", e);
+            }
+        }, pathfindingExecutor).exceptionally(throwable -> {
+            if (!(throwable instanceof java.util.concurrent.CancellationException)) {
+                log.error("Closest lamp calculation failed", throwable);
+            }
+            return null;
+        });
+    }
 
-    //         if (directionMatch)
-    //         {
-    //             matchingDirectionLamps.add(lamp);
-    //         }
-    //     }
-
-    //     // If direction filtering is too strict, fall back to all unknown lamps on that plane
-    //     if (matchingDirectionLamps.isEmpty())
-    //     {
-    //         matchingDirectionLamps.addAll(candidateLamps);
-    //     }
-
-    //     Lamp closestLamp = matchingDirectionLamps.stream()
-    //             .min(Comparator.comparingInt(lamp -> lamp.getWorldPoint().distanceTo(playerLocation)))
-    //             .orElse(null);
-
-    //     if (closestLamp != null)
-    //     {
-    //         lampStatuses.put(closestLamp, LampStatus.BROKEN);
-    //         if (panel.isVisible())
-    //         {
-    //             panel.update();
-    //         }
-    //     }
-    // }
+    public Lamp getClosestLamp()
+    {
+        return lastLoggedClosestLamp;
+    }
 
 	public void setHintArrow(Lamp lamp)
 	{
@@ -450,41 +481,6 @@ public class DKLampsPlugin extends Plugin
 			client.clearHintArrow();
 		}
 	}
-
-    private void findShortestPath()
-    {
-        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
-        if (playerLocation == null)
-        {
-            return;
-        }
-
-        if (brokenLamps.isEmpty())
-        {
-            shortestPath.clear();
-            return;
-        }
-
-        List<WorldPoint> bestPath = null;
-
-        for (Lamp lamp : brokenLamps)
-        {
-            List<WorldPoint> currentPath = pathfinder.findPath(playerLocation, lamp.getWorldPoint());
-
-            if (currentPath == null || currentPath.isEmpty())
-            {
-                continue;
-            }
-
-            if (bestPath == null || currentPath.size() < bestPath.size())
-            {
-                bestPath = currentPath;
-            }
-        }
-        
-        shortestPath = (bestPath != null) ? bestPath : new ArrayList<>();
-    }
-
 
 	@Provides
 	DKLampsConfig provideConfig(ConfigManager configManager)

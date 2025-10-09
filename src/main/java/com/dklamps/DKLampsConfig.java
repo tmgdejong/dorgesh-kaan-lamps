@@ -15,19 +15,40 @@ import net.runelite.client.config.Range;
 @ConfigGroup("dorgeshkaanlamps")
 public interface DKLampsConfig extends Config
 {
-
     @ConfigItem(
         keyName = "showHintArrow",
         name = "Show Hint Arrow",
         description = "Show a hint arrow pointing to the nearest broken lamp.",
         position = 1
     )
-    default boolean showHintArrow()
-    {
-        return true;
-    }
+	default boolean showHintArrow()
+	{
+		return true;
+	}
 
-    @ConfigSection(
+	@ConfigItem(
+		keyName = "showPathToClosestLamp",
+		name = "Show Path to Closest Lamp",
+		description = "Draw a path on the ground to the closest broken lamp",
+		position = 3
+	)
+	default boolean showPathToClosestLamp()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "pathColor",
+		name = "Path Color",
+		description = "The color of the path to the closest lamp",
+		position = 4
+	)
+	default Color pathColor()
+	{
+		return Color.CYAN;
+	}
+
+	@ConfigSection(
         name = "Highlight Lamps",
         description = "Settings for highlighting Dorgesh-Kaan lamps.",
         position = 10

@@ -1,5 +1,6 @@
 package com.dklamps.pathfinder;
 
+import com.dklamps.enums.Transport;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +12,9 @@ import java.util.Set;
 import net.runelite.api.coords.WorldPoint;
 
 public class Pathfinder {
+    private static final int MAX_ITERATIONS = 10000; // Prevent infinite loops
+    private static final int MAX_PATH_LENGTH = 1000; // Reasonable max path length
+    
     private final SplitFlagMap map;
     private final Map<WorldPoint, List<Transport>> transports;
 
@@ -18,14 +22,33 @@ public class Pathfinder {
         this.map = SplitFlagMap.loadFromResources();
         this.transports = new HashMap<>();
         
-        for (Transport transport : TransportLoader.loadTransports()) {
+        for (Transport transport : Transport.values()) {
             transports.computeIfAbsent(transport.getOrigin(), k -> new ArrayList<>()).add(transport);
         }
     }
 
     public List<WorldPoint> findPath(WorldPoint start, WorldPoint end) {
+        // Basic validation
+        if (start == null || end == null) {
+            return new ArrayList<>();
+        }
+        
+        // If already at destination
+        if (start.equals(end)) {
+            List<WorldPoint> path = new ArrayList<>();
+            path.add(start);
+            return path;
+        }
+        
+        // Check if destinations are too far apart (rough distance check)
+        int roughDistance = Math.abs(start.getX() - end.getX()) + Math.abs(start.getY() - end.getY());
+        if (roughDistance > MAX_PATH_LENGTH) {
+            return new ArrayList<>(); // Destination too far
+        }
+        
         PriorityQueue<Node> openSet = new PriorityQueue<>();
         Set<WorldPoint> closedSet = new HashSet<>();
+        int iterations = 0;
 
         Node startNode = new Node(start);
         startNode.setGCost(0);
@@ -33,11 +56,18 @@ public class Pathfinder {
         startNode.setFCost(startNode.getHCost());
         openSet.add(startNode);
 
-        while (!openSet.isEmpty()) {
+        while (!openSet.isEmpty() && iterations < MAX_ITERATIONS) {
+            iterations++;
+            
             Node currentNode = openSet.poll();
 
             if (currentNode.getWorldPoint().equals(end)) {
-                return currentNode.getPath();
+                List<WorldPoint> path = currentNode.getPath();
+                // Additional safety check on path length
+                if (path.size() > MAX_PATH_LENGTH) {
+                    return new ArrayList<>();
+                }
+                return path;
             }
 
             closedSet.add(currentNode.getWorldPoint());
@@ -51,6 +81,11 @@ public class Pathfinder {
                 // plus a penalty to make walking preferred over short distances
                 int transportCost = neighbor.getParent() != null && transports.containsKey(neighbor.getParent().getWorldPoint()) ? 5 : 1;
                 int tentativeGCost = currentNode.getGCost() + transportCost;
+
+                // Safety check: abandon paths that are getting too long
+                if (tentativeGCost > MAX_PATH_LENGTH) {
+                    continue;
+                }
 
                 if (tentativeGCost < neighbor.getGCost() || !openSet.contains(neighbor)) {
                     neighbor.setGCost(tentativeGCost);
