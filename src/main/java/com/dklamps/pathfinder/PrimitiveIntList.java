@@ -5,12 +5,16 @@ import java.util.Arrays;
 /**
  * A minimal, growable list implementation for primitive {@code int} values.
  * <p>
- * This class avoids boxing overhead present in {@link java.util.List Integer} collections
- * by storing values in a backing {@code int[]} that grows as needed. It purposefully
- * implements only the operations required by the pathfinding logic in this plugin; it is
+ * This class avoids boxing overhead present in {@link java.util.List Integer}
+ * collections
+ * by storing values in a backing {@code int[]} that grows as needed. It
+ * purposefully
+ * implements only the operations required by the pathfinding logic in this
+ * plugin; it is
  * <strong>not</strong> a drop‑in replacement for {@link java.util.ArrayList}.
  * <p>
- * The growth policy increases capacity by 50% (similar to {@code ArrayList}) when the
+ * The growth policy increases capacity by 50% (similar to {@code ArrayList})
+ * when the
  * existing array is exhausted. Capacity never shrinks.
  */
 public class PrimitiveIntList {
@@ -22,10 +26,13 @@ public class PrimitiveIntList {
     /**
      * Creates a new list with the specified initial capacity.
      *
-     * @param initialCapacity the initial length of the backing array (must be {@code >= 0}).
-     * @param initialize if {@code true}, the {@link #size} is set equal to {@code initialCapacity},
-     *                   effectively pre-filling the logical list with zeroes. If {@code false},
-     *                   the list is created empty.
+     * @param initialCapacity the initial length of the backing array (must be
+     *                        {@code >= 0}).
+     * @param initialize      if {@code true}, the {@link #size} is set equal to
+     *                        {@code initialCapacity},
+     *                        effectively pre-filling the logical list with zeroes.
+     *                        If {@code false},
+     *                        the list is created empty.
      * @throws IllegalArgumentException if {@code initialCapacity < 0}.
      */
     public PrimitiveIntList(int initialCapacity, boolean initialize) {
@@ -41,7 +48,8 @@ public class PrimitiveIntList {
     /**
      * Creates an empty list with the given backing array capacity.
      *
-     * @param initialCapacity initial length of the internal array (must be {@code >= 0}).
+     * @param initialCapacity initial length of the internal array (must be
+     *                        {@code >= 0}).
      */
     public PrimitiveIntList(int initialCapacity) {
         this(initialCapacity, false);
@@ -54,9 +62,9 @@ public class PrimitiveIntList {
         this(10);
     }
 
-
     /**
-     * Ensures that the backing array can store at least {@code minCapacity} elements.
+     * Ensures that the backing array can store at least {@code minCapacity}
+     * elements.
      * If the current capacity is already sufficient the call is a no-op.
      *
      * @param minCapacity the desired minimum capacity (ignored if {@code <= 0}).
@@ -93,7 +101,8 @@ public class PrimitiveIntList {
     }
 
     /**
-     * Returns the number of elements that have been added to (or initialized in) this list.
+     * Returns the number of elements that have been added to (or initialized in)
+     * this list.
      *
      * @return current element count (always {@code >= 0}).
      */
@@ -114,14 +123,16 @@ public class PrimitiveIntList {
      * Tests whether the specified primitive value exists in the list.
      *
      * @param e the value to search for.
-     * @return {@code true} if the value occurs at least once; {@code false} otherwise.
+     * @return {@code true} if the value occurs at least once; {@code false}
+     *         otherwise.
      */
     public boolean contains(int e) {
         return indexOf(e) >= 0;
     }
 
     /**
-     * Returns the index of the first occurrence of the given value, or {@code -1} if absent.
+     * Returns the index of the first occurrence of the given value, or {@code -1}
+     * if absent.
      *
      * @param e the value to locate.
      * @return zero-based index of the value, or {@code -1} if not found.
@@ -150,7 +161,7 @@ public class PrimitiveIntList {
     /**
      * Replaces the value at the specified index.
      *
-     * @param index zero-based position of the element to overwrite.
+     * @param index   zero-based position of the element to overwrite.
      * @param element the new value.
      * @return the previous value stored at {@code index}.
      * @throws IndexOutOfBoundsException if {@code index < 0 || index >= size}.
@@ -162,9 +173,9 @@ public class PrimitiveIntList {
         return oldValue;
     }
 
-
     /**
-     * Appends a value to the end of the list, growing the backing array if required.
+     * Appends a value to the end of the list, growing the backing array if
+     * required.
      *
      * @param e value to append.
      * @return always {@code true}
@@ -176,9 +187,11 @@ public class PrimitiveIntList {
     }
 
     /**
-     * Inserts a value at the specified index, shifting subsequent elements one position to the right.
+     * Inserts a value at the specified index, shifting subsequent elements one
+     * position to the right.
      *
-     * @param index zero-based insertion point (may be equal to {@link #size()} to append).
+     * @param index   zero-based insertion point (may be equal to {@link #size()} to
+     *                append).
      * @param element the value to insert.
      * @throws IndexOutOfBoundsException if {@code index < 0 || index > size}.
      */
@@ -227,7 +240,7 @@ public class PrimitiveIntList {
     private void fastRemove(int index) {
         int numMoved = size - index - 1;
         if (numMoved > 0) {
-            System.arraycopy(elementData, index+1, elementData, index, numMoved);
+            System.arraycopy(elementData, index + 1, elementData, index, numMoved);
         }
         elementData[--size] = 0;
     }

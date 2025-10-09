@@ -63,7 +63,7 @@ public class SplitFlagMap {
 
     public static SplitFlagMap loadFromResources() {
         Map<Integer, byte[]> compressedRegions = new HashMap<>();
-        String[] regionFiles = {"42_82", "42_83"};
+        String[] regionFiles = { "42_82", "42_83" };
 
         int minX = 42, minY = 82, maxX = 42, maxY = 83;
 
@@ -72,7 +72,7 @@ public class SplitFlagMap {
                 if (in == null) {
                     throw new IOException("Collision map file not found: " + regionFile);
                 }
-                
+
                 String[] n = regionFile.split("_");
                 final int x = Integer.parseInt(n[0]);
                 final int y = Integer.parseInt(n[1]);
@@ -85,7 +85,7 @@ public class SplitFlagMap {
         regionExtents = new RegionExtent(minX, minY, maxX, maxY);
         return new SplitFlagMap(compressedRegions);
     }
-    
+
     @RequiredArgsConstructor
     @Getter
     public static class RegionExtent {

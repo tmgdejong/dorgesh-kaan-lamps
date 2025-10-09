@@ -5,9 +5,8 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum LampStatus
-{
-	BROKEN,
-	WORKING,
-	UNKNOWN,
+public enum LampStatus {
+    BROKEN,
+    WORKING,
+    UNKNOWN,
 }

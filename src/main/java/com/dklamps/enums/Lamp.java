@@ -6,8 +6,7 @@ import net.runelite.api.coords.WorldPoint;
 
 @Getter
 @RequiredArgsConstructor
-public enum Lamp
-{
+public enum Lamp {
 	// Plane 0 South
 	P0_S_LAMP_1(0, 22988, new WorldPoint(2738, 5283, 0), Area.P0_S, "Group of rooms just SE of the market"),
 	P0_S_LAMP_2(1, 22989, new WorldPoint(2749, 5292, 0), Area.P0_S, "Group of rooms just SE of the market"),

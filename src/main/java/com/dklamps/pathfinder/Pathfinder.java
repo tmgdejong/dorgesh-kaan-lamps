@@ -14,14 +14,14 @@ import net.runelite.api.coords.WorldPoint;
 public class Pathfinder {
     private static final int MAX_ITERATIONS = 10000; // Prevent infinite loops
     private static final int MAX_PATH_LENGTH = 1000; // Reasonable max path length
-    
+
     private final SplitFlagMap map;
     private final Map<WorldPoint, List<Transport>> transports;
 
     public Pathfinder() throws IOException {
         this.map = SplitFlagMap.loadFromResources();
         this.transports = new HashMap<>();
-        
+
         for (Transport transport : Transport.values()) {
             transports.computeIfAbsent(transport.getOrigin(), k -> new ArrayList<>()).add(transport);
         }
@@ -32,20 +32,20 @@ public class Pathfinder {
         if (start == null || end == null) {
             return new ArrayList<>();
         }
-        
+
         // If already at destination
         if (start.equals(end)) {
             List<WorldPoint> path = new ArrayList<>();
             path.add(start);
             return path;
         }
-        
+
         // Check if destinations are too far apart (rough distance check)
         int roughDistance = Math.abs(start.getX() - end.getX()) + Math.abs(start.getY() - end.getY());
         if (roughDistance > MAX_PATH_LENGTH) {
             return new ArrayList<>(); // Destination too far
         }
-        
+
         PriorityQueue<Node> openSet = new PriorityQueue<>();
         Set<WorldPoint> closedSet = new HashSet<>();
         int iterations = 0;
@@ -58,7 +58,7 @@ public class Pathfinder {
 
         while (!openSet.isEmpty() && iterations < MAX_ITERATIONS) {
             iterations++;
-            
+
             Node currentNode = openSet.poll();
 
             if (currentNode.getWorldPoint().equals(end)) {
@@ -77,9 +77,10 @@ public class Pathfinder {
                     continue;
                 }
 
-                // A transport's cost is the distance between the origin and destination, 
+                // A transport's cost is the distance between the origin and destination,
                 // plus a penalty to make walking preferred over short distances
-                int transportCost = neighbor.getParent() != null && transports.containsKey(neighbor.getParent().getWorldPoint()) ? 5 : 1;
+                int transportCost = neighbor.getParent() != null
+                        && transports.containsKey(neighbor.getParent().getWorldPoint()) ? 5 : 1;
                 int tentativeGCost = currentNode.getGCost() + transportCost;
 
                 // Safety check: abandon paths that are getting too long
@@ -122,7 +123,7 @@ public class Pathfinder {
                 }
             }
         }
-        
+
         // Transport neighbors
         if (transports.containsKey(p)) {
             for (Transport transport : transports.get(p)) {
@@ -136,7 +137,7 @@ public class Pathfinder {
     private boolean isWalkable(int x, int y, int z) {
         return !map.get(x, y, z, 1);
     }
-    
+
     private int calculateHeuristic(WorldPoint from, WorldPoint to) {
         // Manhattan distance, but also factor in plane distance
         int distance = Math.abs(from.getX() - to.getX()) + Math.abs(from.getY() - to.getY());

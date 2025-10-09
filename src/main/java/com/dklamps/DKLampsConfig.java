@@ -13,16 +13,14 @@ import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 
 @ConfigGroup("dorgeshkaanlamps")
-public interface DKLampsConfig extends Config
-{
+public interface DKLampsConfig extends Config{
     @ConfigItem(
         keyName = "showHintArrow",
         name = "Show Hint Arrow",
         description = "Show a hint arrow pointing to the nearest broken lamp.",
         position = 1
     )
-	default boolean showHintArrow()
-	{
+	default boolean showHintArrow() {
 		return true;
 	}
 
@@ -32,8 +30,7 @@ public interface DKLampsConfig extends Config
 		description = "Draw a path on the ground to the closest broken lamp",
 		position = 3
 	)
-	default boolean showPathToClosestLamp()
-	{
+	default boolean showPathToClosestLamp() {
 		return true;
 	}
 
@@ -43,8 +40,7 @@ public interface DKLampsConfig extends Config
 		description = "The color of the path to the closest lamp",
 		position = 4
 	)
-	default Color pathColor()
-	{
+	default Color pathColor() {
 		return Color.CYAN;
 	}
 
@@ -62,8 +58,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 1
 	)
-	default boolean highlightBrokenLamps()
-	{
+	default boolean highlightBrokenLamps() {
 		return true;
 	}
 
@@ -74,8 +69,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 2
 	)
-	default boolean highlightWorkingLamps()
-	{
+	default boolean highlightWorkingLamps() {
 		return false;
 	}
 
@@ -86,8 +80,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 3
 	)
-	default boolean highlightAllLamps()
-	{
+	default boolean highlightAllLamps() {
 		return false;
 	}
 
@@ -98,8 +91,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 4
 	)
-	default Color getBrokenLampColor()
-	{
+	default Color getBrokenLampColor() {
 		return Color.RED;
 	}
 
@@ -110,8 +102,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 5
 	)
-	default Color getWorkingLampColor()
-	{
+	default Color getWorkingLampColor() {
 		return Color.GREEN;
 	}
 
@@ -122,8 +113,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 6
 	)
-	default Color getDefaultLampColor()
-	{
+	default Color getDefaultLampColor() {
 		return Color.GRAY;
 	}
 
@@ -134,8 +124,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 7
 	)
-	default boolean highlightOtherPlanesLamps()
-	{
+	default boolean highlightOtherPlanesLamps() {
 		return false;
 	}
 
@@ -146,8 +135,7 @@ public interface DKLampsConfig extends Config
         section = lampsSection,
         position = 8
 	)
-	default boolean darkenOtherPlanesLamps()
-	{
+	default boolean darkenOtherPlanesLamps() {
 		return true;
 	}
 
@@ -165,8 +153,7 @@ public interface DKLampsConfig extends Config
         section = sidePanelSection,
         position = 1
     )
-    default boolean enableSidePanel()
-    {
+    default boolean enableSidePanel() {
         return true;
     }
 
@@ -178,8 +165,7 @@ public interface DKLampsConfig extends Config
         section = sidePanelSection,
         position = 2
     )
-    default DisplayFloorTypes displayWorkingLampsInPanel()
-    {
+    default DisplayFloorTypes displayWorkingLampsInPanel() {
         return DisplayFloorTypes.ALL_FLOORS;
     }
 
@@ -190,8 +176,7 @@ public interface DKLampsConfig extends Config
         section = sidePanelSection,
         position = 3
     )
-    default DisplayFloorTypes displayPlayerInPanel()
-    {
+    default DisplayFloorTypes displayPlayerInPanel() {
         return DisplayFloorTypes.ALL_FLOORS;
     }
 
@@ -203,8 +188,7 @@ public interface DKLampsConfig extends Config
         section = sidePanelSection,
         position = 4
     )
-    default int playerOpacityOtherFloors()
-    {
+    default int playerOpacityOtherFloors() {
         return 75;
     }
 
@@ -222,8 +206,7 @@ public interface DKLampsConfig extends Config
         section = hintsSection,
 		position = 1
 	)
-	default boolean highlightWireMachine()
-	{
+	default boolean highlightWireMachine() {
 		return true;
 	}
 
@@ -245,8 +228,7 @@ public interface DKLampsConfig extends Config
 		section = hintsSection,
         position = 10
 	)
-	default boolean highlightClosedDoors()
-	{
+	default boolean highlightClosedDoors() {
 		return false;
 	}
 
@@ -257,8 +239,7 @@ public interface DKLampsConfig extends Config
 		section = hintsSection,
         position = 20
 	)
-	default boolean highlightStairs()
-	{
+	default boolean highlightStairs() {
 		return false;
 	}
 
@@ -269,8 +250,7 @@ public interface DKLampsConfig extends Config
         section = hintsSection,
         position = 100
 	)
-	default Color wireMachineHighlightColor()
-	{
+	default Color wireMachineHighlightColor() {
 		return Color.ORANGE;
 	}
 
@@ -281,8 +261,7 @@ public interface DKLampsConfig extends Config
 		section = hintsSection,
         position = 110
 	)
-	default Color doorHighlightColor()
-	{
+	default Color doorHighlightColor() {
 		return Color.YELLOW;
 	}
 
@@ -293,8 +272,7 @@ public interface DKLampsConfig extends Config
 		section = hintsSection,
         position = 120
 	)
-	default Color stairHighlightColor()
-	{
+	default Color stairHighlightColor() {
 		return Color.CYAN;
 	}
 
@@ -313,8 +291,7 @@ public interface DKLampsConfig extends Config
         section = highlightStyleSection,
         position = 1
     )
-    default HighlightTypes highlightStyle()
-    {
+    default HighlightTypes highlightStyle() {
         return HighlightTypes.HIGHLIGHT_CLICKBOX;
     }
 
@@ -326,8 +303,7 @@ public interface DKLampsConfig extends Config
         section = highlightStyleSection,
         position = 2
 	)
-	default int borderFeather()
-	{
+	default int borderFeather() {
 		return 0;
 	}
 
@@ -339,8 +315,7 @@ public interface DKLampsConfig extends Config
         section = highlightStyleSection,
         position = 3
 	)
-	default int borderThickness()
-	{
+	default int borderThickness() {
 		return 2;
 	}
 }

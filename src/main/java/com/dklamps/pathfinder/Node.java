@@ -24,12 +24,12 @@ public class Node implements Comparable<Node> {
     public List<WorldPoint> getPath() {
         List<WorldPoint> path = new ArrayList<>();
         Node current = this;
-        
+
         while (current != null) {
             path.add(current.worldPoint);
             current = current.parent;
         }
-        
+
         Collections.reverse(path);
         return path;
     }
@@ -41,8 +41,10 @@ public class Node implements Comparable<Node> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
         Node node = (Node) obj;
         return worldPoint.equals(node.worldPoint);
     }
