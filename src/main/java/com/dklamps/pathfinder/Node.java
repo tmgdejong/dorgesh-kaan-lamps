@@ -10,9 +10,9 @@ import java.util.List;
 public class Node implements Comparable<Node> {
     private final WorldPoint worldPoint;
     private Node parent;
-    private int gCost; // Distance from start
-    private int hCost; // Distance to target (heuristic)
-    private int fCost; // Total cost (g + h)
+    private float gCost; // Distance from start
+    private float hCost; // Distance to target (heuristic)
+    private float fCost; // Total cost (g + h)
 
     public Node(WorldPoint worldPoint) {
         this.worldPoint = worldPoint;
@@ -36,7 +36,7 @@ public class Node implements Comparable<Node> {
 
     @Override
     public int compareTo(Node other) {
-        return Integer.compare(this.fCost, other.fCost);
+        return Float.compare(this.fCost, other.fCost);
     }
 
     @Override

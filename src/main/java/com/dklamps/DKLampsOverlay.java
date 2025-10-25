@@ -1,5 +1,6 @@
 package com.dklamps;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -7,13 +8,16 @@ import java.awt.Polygon;
 import java.awt.Shape;
 import java.time.Instant;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 
 import com.dklamps.enums.HighlightTypes;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
 import com.dklamps.enums.TimerTypes;
+import com.dklamps.enums.Transport;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -59,9 +63,6 @@ public class DKLampsOverlay extends Overlay {
 
         renderLamps(graphics);
 
-        // Render path to closest lamp
-        drawPathToClosestLamp(graphics);
-
         if (config.highlightClosedDoors()) {
             for (WallObject door : plugin.getDoors()) {
                 if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
@@ -88,6 +89,8 @@ public class DKLampsOverlay extends Overlay {
                 renderWireTimer(graphics);
             }
         }
+
+        drawPathToClosestLamp(graphics);
 
         return null;
     }
@@ -158,6 +161,9 @@ public class DKLampsOverlay extends Overlay {
             return;
         }
 
+        Set<WorldPoint> pathPoints = new HashSet<>(path);
+        Set<Transport> activeTransports = new HashSet<>();
+
         for (WorldPoint point : path) {
             if (point.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
@@ -172,7 +178,82 @@ public class DKLampsOverlay extends Overlay {
             if (poly != null) {
                 OverlayUtil.renderPolygon(graphics, poly, config.pathColor());
             }
+
+            List<Transport> transports = plugin.getPathfinder().getTransportsAt(point);
+            for (Transport transport : transports) {
+                if (pathPoints.contains(transport.getOrigin()) && pathPoints.contains(transport.getDestination())) {
+                    activeTransports.add(transport);
+                }
+            }
         }
+
+        highlightTransportsOnPath(graphics, activeTransports);
+        highlightDoorsOnPath(graphics, pathPoints);
+
+    }
+    
+    private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports) {
+        
+        if (activeTransports.isEmpty()) {
+            return;
+        }
+                
+        for (GameObject stair : plugin.getStairs()) {
+            if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
+                continue;
+            }
+            
+            WorldPoint stairLocation = stair.getWorldLocation();
+            if (isStairBetweenTransportPoints(stairLocation, activeTransports)) {
+                renderTileObject(stair, config.pathColor(), graphics);
+            }
+        }
+        
+    }
+    
+    private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints) {
+        for (WallObject door : plugin.getDoors()) {
+            if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
+                continue;
+            }
+            
+            WorldPoint doorLocation = door.getWorldLocation();
+            if (pathPoints.contains(doorLocation)) {
+                renderTileObject(door, config.pathColor(), graphics);
+            }
+        }
+    }
+    
+    private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports) {
+        for (Transport transport : activeTransports) {
+            WorldPoint origin = transport.getOrigin();
+            WorldPoint destination = transport.getDestination();
+            
+            if (objectLocation.getPlane() != origin.getPlane() && objectLocation.getPlane() != destination.getPlane()) {
+                continue;
+            }
+            
+            int objX = objectLocation.getX();
+            int objY = objectLocation.getY();
+            
+            int minX = Math.min(origin.getX(), destination.getX());
+            int maxX = Math.max(origin.getX(), destination.getX());
+            int minY = Math.min(origin.getY(), destination.getY());
+            int maxY = Math.max(origin.getY(), destination.getY());
+            
+            boolean xBetween = objX >= minX && objX <= maxX;
+            boolean yBetween = objY >= minY && objY <= maxY;
+
+            if (xBetween && yBetween) {
+                return true;
+            }
+
+            if ((Math.abs(objX - origin.getX()) <= 1 && Math.abs(objY - origin.getY()) <= 1) &&
+                (Math.abs(objX - destination.getX()) <= 1 && Math.abs(objY - destination.getY()) <= 1)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void renderWireTimer(Graphics2D graphics) {

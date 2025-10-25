@@ -34,6 +34,14 @@ public class Pathfinder {
         return findPathInternal(start, end, MAX_ITERATIONS);
     }
     
+    public boolean isTransportLocation(WorldPoint point) {
+        return transports.containsKey(point);
+    }
+    
+    public List<Transport> getTransportsAt(WorldPoint point) {
+        return transports.getOrDefault(point, new ArrayList<>());
+    }
+    
     private List<WorldPoint> findPathInternal(WorldPoint start, WorldPoint end, int maxIterations) {
         // Basic validation
         if (start == null || end == null) {
@@ -53,6 +61,12 @@ public class Pathfinder {
             System.out.println("DEBUG: Pathfinding rejected - too far apart: " + roughDistance + " > " + MAX_PATH_LENGTH);
             return new ArrayList<>(); // Destination too far
         }
+        
+        // If the lamp is on a different plane, we need to find a path that includes transports
+        boolean crossPlane = start.getPlane() != end.getPlane();
+        if (crossPlane) {
+            System.out.println("DEBUG: Cross-plane pathfinding from plane " + start.getPlane() + " to plane " + end.getPlane());
+        }
                 
         Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
         
@@ -68,30 +82,35 @@ public class Pathfinder {
         WorldPoint bestTarget = null;
         int closestDistance = Integer.MAX_VALUE;
         
-        for (Direction direction : cardinalDirections) {
-            // Skip this direction if it's marked as unreachable for this lamp
-            if (targetLamp != null && targetLamp.getUnreachableDirections().contains(direction)) {
-                continue;
-            }
-            
-            WorldPoint nearby = new WorldPoint(end.getX() + direction.getX(), end.getY() + direction.getY(), end.getPlane());
-            List<Node> nearbyNeighbors = getNeighbors(new Node(nearby));
-            if (!nearbyNeighbors.isEmpty()) {
-                // Calculate distance from player to this adjacent tile
-                int distance = Math.abs(start.getX() - nearby.getX()) + Math.abs(start.getY() - nearby.getY());
-                if (distance < closestDistance) {
-                    closestDistance = distance;
-                    bestTarget = nearby;
+        // If we're on the same plane, find adjacent walkable tiles
+        if (!crossPlane) {
+            for (Direction direction : cardinalDirections) {
+                // Skip this direction if it's marked as unreachable for this lamp
+                if (targetLamp != null && targetLamp.getUnreachableDirections().contains(direction)) {
+                    continue;
+                }
+                
+                WorldPoint nearby = new WorldPoint(end.getX() + direction.getX(), end.getY() + direction.getY(), end.getPlane());
+                List<Node> nearbyNeighbors = getNeighbors(new Node(nearby));
+                if (!nearbyNeighbors.isEmpty()) {
+                    // Calculate distance from player to this adjacent tile
+                    int distance = Math.abs(start.getX() - nearby.getX()) + Math.abs(start.getY() - nearby.getY());
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        bestTarget = nearby;
+                    }
                 }
             }
+            
+            if (bestTarget != null) {
+                end = bestTarget; // Use closest walkable tile as target
+            } else {
+                System.out.println("DEBUG: No walkable directions found for lamp at " + end);
+                return new ArrayList<>();
+            }
         }
-        
-        if (bestTarget != null) {
-            end = bestTarget; // Use closest walkable tile as target
-        } else {
-            System.out.println("DEBUG: No walkable directions found for lamp at " + end);
-            return new ArrayList<>();
-        }
+        // For cross-plane pathfinding, we keep the lamp location as the target
+        // and let the A* algorithm find transports to reach it
 
         PriorityQueue<Node> openSet = new PriorityQueue<>();
         Set<WorldPoint> closedSet = new HashSet<>();
@@ -108,6 +127,7 @@ public class Pathfinder {
 
             Node currentNode = openSet.poll();
 
+            // Check if we've reached the exact destination
             if (currentNode.getWorldPoint().equals(end)) {
                 List<WorldPoint> path = currentNode.getPath();
                 // Additional safety check on path length
@@ -117,12 +137,28 @@ public class Pathfinder {
                 return path;
             }
             
-            // Early termination for very short paths - they're likely optimal
-            if (currentNode.getGCost() <= 5) {
+            // For cross-plane pathfinding, also check if we're adjacent to the lamp on the same plane
+            if (crossPlane && currentNode.getWorldPoint().getPlane() == end.getPlane()) {
+                int dx = Math.abs(currentNode.getWorldPoint().getX() - end.getX());
+                int dy = Math.abs(currentNode.getWorldPoint().getY() - end.getY());
+                if (dx <= 1 && dy <= 1) {
+                    // We're adjacent to the lamp on the correct plane
+                    List<WorldPoint> path = currentNode.getPath();
+                    // Don't add the lamp itself, just get to adjacent tile
+                    if (path.size() > MAX_PATH_LENGTH) {
+                        return new ArrayList<>();
+                    }
+                    return path;
+                }
+            }
+            
+            // Early termination for very short paths on same plane - they're likely optimal
+            // Only apply this optimization for same-plane pathfinding and when we're very close
+            if (!crossPlane && currentNode.getGCost() <= 3) {
                 int directDistance = Math.abs(currentNode.getWorldPoint().getX() - end.getX()) + 
                                    Math.abs(currentNode.getWorldPoint().getY() - end.getY());
-                if (directDistance <= 2) {
-                    // We're very close, this path is likely good enough
+                if (directDistance <= 1) {
+                    // We're immediately adjacent, this path is optimal
                     List<WorldPoint> path = currentNode.getPath();
                     path.add(end); // Add the destination
                     return path;
@@ -136,14 +172,25 @@ public class Pathfinder {
                     continue;
                 }
 
-                int transportCost = 1;
+                float transportCost = 1;
                 if (transports.containsKey(currentNode.getWorldPoint())) {
                     for (Transport transport : transports.get(currentNode.getWorldPoint())) {
-                        transportCost = transport.getDuration();
+                        // Use the transport's duration but add a small base cost to make
+                        // pathfinder prefer direct routes when possible
+                        transportCost = Math.max(transport.getDuration(), 2);
                         break;
                     }
+                } else {
+                    WorldPoint current = currentNode.getWorldPoint();
+                    WorldPoint next = neighbor.getWorldPoint();
+                    int dx = Math.abs(next.getX() - current.getX());
+                    int dy = Math.abs(next.getY() - current.getY());
+                    
+                    if (dx == 1 && dy == 1) {
+                        transportCost += 0.01;
+                    }
                 }
-                int tentativeGCost = currentNode.getGCost() + transportCost;
+                float tentativeGCost = currentNode.getGCost() + transportCost;
 
                 // Safety check: abandon paths that are getting too long
                 if (tentativeGCost > MAX_PATH_LENGTH) {
@@ -178,19 +225,13 @@ public class Pathfinder {
     }
 
     private int calculateHeuristic(WorldPoint from, WorldPoint to) {
-        // Simple Manhattan distance - more reliable than WorldPointUtil
         int dx = Math.abs(from.getX() - to.getX());
         int dy = Math.abs(from.getY() - to.getY());
-        int distance = dx + dy;
         
-        // Add penalty for plane changes
-        if (from.getPlane() != to.getPlane()) {
-            // Higher penalty that scales with horizontal distance
-            // If lamp is directly above/below (dx+dy small), penalty is significant
-            // If lamp is far horizontally, penalty becomes less significant relative to distance
-            int planeChangePenalty = Math.max(10, (dx + dy) / 4);
-            distance += planeChangePenalty;
-        }
-        return distance;
+        // Use pure Chebyshev distance without plane penalties
+        // Plane differences should not be penalized since transport usage is often optimal
+        int chebyshevDistance = Math.max(dx, dy);
+
+        return chebyshevDistance;
     }
 }

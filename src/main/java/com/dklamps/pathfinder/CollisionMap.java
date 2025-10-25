@@ -73,26 +73,6 @@ public class CollisionMap {
         final int y = p.getY();
         final int z = p.getPlane();
 
-        // Debug: Check if we have collision data
-        try {
-            boolean testFlag0 = get(x, y, z, 0);
-            boolean testFlag1 = get(x, y, z, 1);
-            // Log collision flags for debugging
-            if (Math.random() < 0.001) {
-                System.out.println("DEBUG: Collision flags at " + x + "," + y + "," + z + ": flag0=" + testFlag0 + ", flag1=" + testFlag1);
-            }
-            
-            // Always log for specific problematic coordinates
-            if ((x == 2699 && y == 5289 && z == 2) || (x == 2741 && y == 5283 && z == 2)) {
-                System.out.println("DEBUG: LAMP COORDS " + x + "," + y + "," + z + " - flags: n=" + n(x,y,z) + 
-                                 ", s=" + s(x,y,z) + ", e=" + e(x,y,z) + ", w=" + w(x,y,z) + 
-                                 " (flag0=" + testFlag0 + ", flag1=" + testFlag1 + ")");
-            }
-        } catch (Exception e) {
-            System.out.println("DEBUG: No collision data available for " + x + "," + y + "," + z + " - " + e.getMessage());
-            return neighbors; // Return empty list
-        }
-
         boolean[] traversable = new boolean[8];
 
         // Always use directional movement flags - don't special case "blocked" tiles
@@ -106,13 +86,6 @@ public class CollisionMap {
         traversable[6] = nw(x, y, z); // NORTH_WEST
         traversable[7] = ne(x, y, z); // NORTH_EAST
         
-        // Debug: Log directional results occasionally
-        if (Math.random() < 0.001) {
-            System.out.println("DEBUG: Movement at " + x + "," + y + "," + z + ": w=" + traversable[0] + 
-                             ", e=" + traversable[1] + ", s=" + traversable[2] + ", n=" + traversable[3] +
-                             " (isBlocked=" + isBlocked(x, y, z) + ")");
-        }
-
         // Add valid walking neighbors
         for (int i = 0; i < traversable.length; i++) {
             if (traversable[i]) {
@@ -121,13 +94,6 @@ public class CollisionMap {
                 int newY = y + d.getY();
                 neighbors.add(new Node(new WorldPoint(newX, newY, z)));
             }
-        }
-
-        // Debug: Log if no walking neighbors found occasionally
-        if (neighbors.isEmpty() && Math.random() < 0.1) { // Increased to 10% chance for better debugging
-            System.out.println("DEBUG CollisionMap: No walking neighbors for " + x + "," + y + "," + z + 
-                             " - traversable: " + java.util.Arrays.toString(traversable) +
-                             " - flags: n=" + n(x,y,z) + ",s=" + s(x,y,z) + ",e=" + e(x,y,z) + ",w=" + w(x,y,z));
         }
 
         // Add transport neighbors

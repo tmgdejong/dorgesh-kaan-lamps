@@ -92,11 +92,15 @@ public class DKLampsPlugin extends Plugin {
 
     @Getter
     private final Map<Lamp, LampStatus> lampStatuses = new EnumMap<>(Lamp.class);
+    
+    public Pathfinder getPathfinder() {
+        return pathfinder;
+    }
 
     private Lamp lastLoggedClosestLamp = null;
     private CompletableFuture<Void> currentClosestLampTask;
     private long lastClosestLampCalculation = 0;
-    private static final long CLOSEST_LAMP_COOLDOWN_MS = 600; // Update every 5 ticks (3 seconds) - matches original cutoff
+    private static final long CLOSEST_LAMP_COOLDOWN_MS = 600;
 
     @Override
     protected void startUp() throws Exception {
