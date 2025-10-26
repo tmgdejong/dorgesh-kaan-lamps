@@ -12,17 +12,9 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 
-@ConfigGroup("dorgeshkaanlamps")
+@ConfigGroup("dklamps")
 public interface DKLampsConfig extends Config{
-    @ConfigItem(
-        keyName = "showHintArrow",
-        name = "Show Hint Arrow",
-        description = "Show a hint arrow pointing to the nearest broken lamp.",
-        position = 1
-    )
-	default boolean showHintArrow() {
-		return true;
-	}
+
 
 	@ConfigItem(
 		keyName = "showPathToClosestLamp",
@@ -43,6 +35,17 @@ public interface DKLampsConfig extends Config{
 	default Color pathColor() {
 		return new Color(255,102,102);
 	}
+
+    @ConfigItem(
+        keyName = "maxPathDistance",
+        name = "Max Path Distance",
+        description = "Highlight teleport sphere if the path is longer than this distance. 0 to disable.",
+        position = 5
+    )
+    default int maxPathDistance()
+    {
+        return 64;
+    }
 
 	@ConfigSection(
         name = "Highlight Lamps",
@@ -193,6 +196,73 @@ public interface DKLampsConfig extends Config{
     }
 
     @ConfigSection(
+        name = "Stats Overlay",
+        description = "Settings for the statistics overlay",
+        position = 80
+    )
+    String statsOverlaySection = "statsOverlaySection";
+
+    @ConfigItem(
+        keyName = "showStatsOverlay",
+        name = "Show Stats Overlay",
+        description = "Toggles the statistics overlay",
+        position = 81,
+        section = statsOverlaySection
+    )
+    default boolean showStatsOverlay()
+    {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "showClosestDistance",
+        name = "Show Distance",
+        description = "Show distance to closest lamp",
+        position = 82,
+        section = statsOverlaySection
+    )
+    default boolean showClosestDistance()
+    {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "showSessionFixed",
+        name = "Show Session Fixed",
+        description = "Show lamps fixed this session",
+        position = 83,
+        section = statsOverlaySection
+    )
+    default boolean showSessionFixed()
+    {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "showLampsPerHour",
+        name = "Show Lamps/Hour",
+        description = "Show lamps fixed per hour",
+        position = 84,
+        section = statsOverlaySection
+    )
+    default boolean showLampsPerHour()
+    {
+        return true;
+    }
+
+    @ConfigItem(
+        keyName = "showTotalFixed",
+        name = "Show Total Fixed",
+        description = "Show all-time total lamps fixed",
+        position = 85,
+        section = statsOverlaySection
+    )
+    default boolean showTotalFixed()
+    {
+        return true;
+    }
+
+    @ConfigSection(
         name = "Hints",
         description = "Settings for additional hints.",
         position = 98
@@ -233,14 +303,25 @@ public interface DKLampsConfig extends Config{
 	}
 
     @ConfigItem(
-		keyName = "highlightStairs",
-		name = "Highlight Stairs/Ladders",
-		description = "Highlight stairs and ladders in Dorgesh-Kaan.",
+		keyName = "highlightInformativeStairs",
+		name = "Highlight Informative Stairs",
+		description = "Highlight stairs/ladders that lead to areas with unknown lamp information.",
 		section = hintsSection,
-        position = 20
+        position = 21
 	)
-	default boolean highlightStairs() {
-		return false;
+	default boolean highlightInformativeStairs() {
+		return true;
+	}
+
+    @ConfigItem(
+		keyName = "informativeStairColor",
+		name = "Informative Stair Color",
+		description = "The color to highlight informative stairs/ladders.",
+		section = hintsSection,
+        position = 22
+	)
+	default Color informativeStairColor() {
+		return Color.MAGENTA;
 	}
 
     @ConfigItem(
@@ -264,18 +345,6 @@ public interface DKLampsConfig extends Config{
 	default Color doorHighlightColor() {
 		return Color.YELLOW;
 	}
-
-	@ConfigItem(
-		keyName = "stairHighlightColor",
-		name = "Stair/Ladder Highlight Color",
-		description = "The color to highlight stairs and ladders.",
-		section = hintsSection,
-        position = 120
-	)
-	default Color stairHighlightColor() {
-		return Color.CYAN;
-	}
-
 
     @ConfigSection(
         name = "Highlight Style",

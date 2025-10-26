@@ -114,7 +114,11 @@ public enum Transport
 	TRANSPORT_22942_2723_5249_3(new WorldPoint(2723, 5249, 3), new WorldPoint(2722, 5255, 1), "Climb-down", "Stairs", 22942, 1),
 	TRANSPORT_22600_2715_5241_0(new WorldPoint(2715, 5241, 0), new WorldPoint(2719, 5241, 3), "Climb-up", "Ladder", 22600, 2),
 	TRANSPORT_22666_2719_5241_3(new WorldPoint(2719, 5241, 3), new WorldPoint(2715, 5241, 0), "Climb-down", "Ladder top", 22666, 2),
-	TRANSPORT_22666_2719_5242_3(new WorldPoint(2719, 5242, 3), new WorldPoint(2715, 5241, 0), "Climb-down", "Ladder top", 22666, 2);
+	TRANSPORT_22666_2719_5242_3(new WorldPoint(2719, 5242, 3), new WorldPoint(2715, 5241, 0), "Climb-down", "Ladder top", 22666, 2),
+	TRANSPORT_22931_2735_5366_1(new WorldPoint(2735, 5366, 1), new WorldPoint(2738, 5366, 2), "Climb-up", "Stairs", 22931, 1),
+	TRANSPORT_22931_2735_5367_1(new WorldPoint(2735, 5367, 1), new WorldPoint(2738, 5366, 2), "Climb-up", "Stairs", 22931, 1),
+	TRANSPORT_22932_2738_5366_2(new WorldPoint(2738, 5366, 2), new WorldPoint(2735, 5366, 1), "Climb-down", "Stairs", 22932, 1),
+	TRANSPORT_22932_2741_5367_2(new WorldPoint(2738, 5367, 2), new WorldPoint(2735, 5366, 1), "Climb-down", "Stairs", 22932, 1);
 
 	private final WorldPoint origin;
 	private final WorldPoint destination;

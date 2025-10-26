@@ -62,13 +62,8 @@ public class MapPanel extends JPanel {
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    for (Lamp lamp : lampsOnThisFloor) {
-                        Ellipse2D.Double circle = getLampCircle(lamp);
-                        if (circle != null && circle.contains(e.getPoint())) {
-                            plugin.setHintArrow(lamp);
-                            break;
-                        }
-                    }
+                    // Click functionality removed since we no longer use hint arrows
+                    // Could be replaced with other functionality like highlighting in the future
                 }
             });
         }

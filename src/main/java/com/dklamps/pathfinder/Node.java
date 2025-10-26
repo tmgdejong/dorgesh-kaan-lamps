@@ -16,9 +16,9 @@ public class Node implements Comparable<Node> {
 
     public Node(WorldPoint worldPoint) {
         this.worldPoint = worldPoint;
-        this.gCost = Integer.MAX_VALUE;
+        this.gCost = Float.MAX_VALUE;
         this.hCost = 0;
-        this.fCost = Integer.MAX_VALUE;
+        this.fCost = Float.MAX_VALUE;
     }
 
     public List<WorldPoint> getPath() {

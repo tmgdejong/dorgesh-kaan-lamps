@@ -64,9 +64,6 @@ public class Pathfinder {
         
         // If the lamp is on a different plane, we need to find a path that includes transports
         boolean crossPlane = start.getPlane() != end.getPlane();
-        if (crossPlane) {
-            System.out.println("DEBUG: Cross-plane pathfinding from plane " + start.getPlane() + " to plane " + end.getPlane());
-        }
                 
         Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
         
@@ -91,13 +88,39 @@ public class Pathfinder {
                 }
                 
                 WorldPoint nearby = new WorldPoint(end.getX() + direction.getX(), end.getY() + direction.getY(), end.getPlane());
+                
+                // Check if this nearby tile is actually walkable by getting its neighbors
                 List<Node> nearbyNeighbors = getNeighbors(new Node(nearby));
                 if (!nearbyNeighbors.isEmpty()) {
-                    // Calculate distance from player to this adjacent tile
-                    int distance = Math.abs(start.getX() - nearby.getX()) + Math.abs(start.getY() - nearby.getY());
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                        bestTarget = nearby;
+                    // Additional check: ensure we can actually reach this adjacent tile from the player's position
+                    // by doing a quick pathfind validation - check if there's at least one valid path direction from this tile
+                    boolean hasValidConnection = false;
+                    
+                    // Check if this adjacent tile can connect back towards the general direction of the player
+                    for (Node neighbor : nearbyNeighbors) {
+                        WorldPoint neighborPoint = neighbor.getWorldPoint();
+                        // Check if this neighbor is on the same plane and moves us in a reasonable direction
+                        if (neighborPoint.getPlane() == nearby.getPlane()) {
+                            // Calculate if this neighbor would bring us closer to or at least not much farther from the start
+                            int distanceFromStart = Math.abs(start.getX() - neighborPoint.getX()) + Math.abs(start.getY() - neighborPoint.getY());
+                            int nearbyDistanceFromStart = Math.abs(start.getX() - nearby.getX()) + Math.abs(start.getY() - nearby.getY());
+                            
+                            // If the neighbor is closer to start than the nearby tile, or within reasonable range, it's likely accessible
+                            if (distanceFromStart <= nearbyDistanceFromStart + 2) {
+                                hasValidConnection = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Only consider this tile if it has valid connections
+                    if (hasValidConnection) {
+                        // Calculate distance from player to this adjacent tile
+                        int distance = Math.abs(start.getX() - nearby.getX()) + Math.abs(start.getY() - nearby.getY());
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            bestTarget = nearby;
+                        }
                     }
                 }
             }
@@ -158,10 +181,24 @@ public class Pathfinder {
                 int directDistance = Math.abs(currentNode.getWorldPoint().getX() - end.getX()) + 
                                    Math.abs(currentNode.getWorldPoint().getY() - end.getY());
                 if (directDistance <= 1) {
-                    // We're immediately adjacent, this path is optimal
-                    List<WorldPoint> path = currentNode.getPath();
-                    path.add(end); // Add the destination
-                    return path;
+                    // We're immediately adjacent to the target, but we need to verify we can actually move there
+                    // Check if the target (end) is in our list of valid neighbors
+                    List<Node> currentNeighbors = getNeighbors(currentNode);
+                    boolean canReachTarget = false;
+                    for (Node neighbor : currentNeighbors) {
+                        if (neighbor.getWorldPoint().equals(end)) {
+                            canReachTarget = true;
+                            break;
+                        }
+                    }
+                    
+                    if (canReachTarget) {
+                        // We can actually reach the target from here, path is optimal
+                        List<WorldPoint> path = currentNode.getPath();
+                        path.add(end); // Add the final step to the target
+                        return path;
+                    }
+                    // If we can't reach the target directly, continue normal pathfinding
                 }
             }
 
@@ -175,9 +212,14 @@ public class Pathfinder {
                 float transportCost = 1;
                 if (transports.containsKey(currentNode.getWorldPoint())) {
                     for (Transport transport : transports.get(currentNode.getWorldPoint())) {
-                        // Use the transport's duration but add a small base cost to make
-                        // pathfinder prefer direct routes when possible
-                        transportCost = Math.max(transport.getDuration(), 2);
+                        // Check if this transport helps us get closer to the target plane
+                        if (transport.getDestination().getPlane() == end.getPlane()) {
+                            // This transport is beneficial - give it a slight bonus
+                            transportCost = Math.max(transport.getDuration() * 0.9f, 1);
+                        } else {
+                            // Regular transport cost
+                            transportCost = Math.max(transport.getDuration(), 2);
+                        }
                         break;
                     }
                 } else {
@@ -186,8 +228,49 @@ public class Pathfinder {
                     int dx = Math.abs(next.getX() - current.getX());
                     int dy = Math.abs(next.getY() - current.getY());
                     
+                    // Add small penalty for diagonal movement to prefer straight lines
                     if (dx == 1 && dy == 1) {
                         transportCost += 0.01;
+                    }
+                    
+                    // If we're on the wrong plane and moving away from useful transports, add penalty
+                    if (current.getPlane() != end.getPlane()) {
+                        // Find the closest useful transport from our current position
+                        int closestTransportDistance = Integer.MAX_VALUE;
+                        for (Map.Entry<WorldPoint, List<Transport>> entry : transports.entrySet()) {
+                            WorldPoint transportLoc = entry.getKey();
+                            if (transportLoc.getPlane() == current.getPlane()) {
+                                for (Transport transport : entry.getValue()) {
+                                    if (transport.getDestination().getPlane() == end.getPlane()) {
+                                        int tDist = Math.max(Math.abs(current.getX() - transportLoc.getX()),
+                                                           Math.abs(current.getY() - transportLoc.getY()));
+                                        closestTransportDistance = Math.min(closestTransportDistance, tDist);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Check if we're moving away from the closest useful transport
+                        if (closestTransportDistance != Integer.MAX_VALUE) {
+                            int nextClosestTransportDistance = Integer.MAX_VALUE;
+                            for (Map.Entry<WorldPoint, List<Transport>> entry : transports.entrySet()) {
+                                WorldPoint transportLoc = entry.getKey();
+                                if (transportLoc.getPlane() == next.getPlane()) {
+                                    for (Transport transport : entry.getValue()) {
+                                        if (transport.getDestination().getPlane() == end.getPlane()) {
+                                            int tDist = Math.max(Math.abs(next.getX() - transportLoc.getX()),
+                                                               Math.abs(next.getY() - transportLoc.getY()));
+                                            nextClosestTransportDistance = Math.min(nextClosestTransportDistance, tDist);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // If we're moving away from transports, add a small penalty
+                            if (nextClosestTransportDistance > closestTransportDistance) {
+                                transportCost += 0.1;
+                            }
+                        }
                     }
                 }
                 float tentativeGCost = currentNode.getGCost() + transportCost;
@@ -210,13 +293,12 @@ public class Pathfinder {
             }
         }
 
-        // Debug: Log why pathfinding failed
         if (iterations >= maxIterations) {
             System.out.println("DEBUG: Pathfinding hit MAX_ITERATIONS (" + maxIterations + ")");
         } else {
             System.out.println("DEBUG: Pathfinding failed - openSet empty after " + iterations + " iterations");
         }
-        return new ArrayList<>(); // Return empty list if no path is found
+        return new ArrayList<>();
     }
 
     private List<Node> getNeighbors(Node node) {
@@ -228,10 +310,50 @@ public class Pathfinder {
         int dx = Math.abs(from.getX() - to.getX());
         int dy = Math.abs(from.getY() - to.getY());
         
-        // Use pure Chebyshev distance without plane penalties
-        // Plane differences should not be penalized since transport usage is often optimal
+        // Base Chebyshev distance
         int chebyshevDistance = Math.max(dx, dy);
-
+        
+        // If we're on different planes, we need to account for transport requirements
+        if (from.getPlane() != to.getPlane()) {
+            // Find the closest transport from our current position
+            int minTransportDistance = Integer.MAX_VALUE;
+            boolean foundRelevantTransport = false;
+            
+            for (Map.Entry<WorldPoint, List<Transport>> entry : transports.entrySet()) {
+                WorldPoint transportLocation = entry.getKey();
+                
+                // Check if any transport at this location can help us reach the target plane
+                for (Transport transport : entry.getValue()) {
+                    if (transport.getDestination().getPlane() == to.getPlane() || 
+                        transport.getOrigin().getPlane() == from.getPlane()) {
+                        
+                        // Calculate distance to this transport location
+                        int transportDx = Math.abs(from.getX() - transportLocation.getX());
+                        int transportDy = Math.abs(from.getY() - transportLocation.getY());
+                        int distanceToTransport = Math.max(transportDx, transportDy);
+                        
+                        // Add distance from transport destination to final target
+                        int destDx = Math.abs(transport.getDestination().getX() - to.getX());
+                        int destDy = Math.abs(transport.getDestination().getY() - to.getY());
+                        int distanceFromTransport = Math.max(destDx, destDy);
+                        
+                        int totalEstimatedDistance = distanceToTransport + distanceFromTransport;
+                        
+                        if (totalEstimatedDistance < minTransportDistance) {
+                            minTransportDistance = totalEstimatedDistance;
+                            foundRelevantTransport = true;
+                        }
+                    }
+                }
+            }
+            
+            // If we found a relevant transport, use the transport-aware distance
+            // Otherwise fall back to direct distance (which will be admissible but not optimal)
+            if (foundRelevantTransport) {
+                return minTransportDistance;
+            }
+        }
+        
         return chebyshevDistance;
     }
 }

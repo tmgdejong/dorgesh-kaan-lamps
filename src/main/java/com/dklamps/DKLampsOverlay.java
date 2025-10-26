@@ -1,5 +1,7 @@
 package com.dklamps;
 
+import static com.dklamps.ObjectIDs.WIRE_MACHINE_INACTIVE;
+
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -18,6 +20,7 @@ import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
 import com.dklamps.enums.TimerTypes;
 import com.dklamps.enums.Transport;
+import com.dklamps.ObjectIDs;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -72,18 +75,29 @@ public class DKLampsOverlay extends Overlay {
             }
         }
 
-        if (config.highlightStairs()) {
+        // if (config.highlightStairs()) {
+        //     for (GameObject stair : plugin.getStairs()) {
+        //         if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
+        //             continue;
+        //         }
+        //         renderTileObject(stair, config.stairHighlightColor(), graphics);
+        //     }
+        // }
+        
+        if (config.highlightInformativeStairs()) {
             for (GameObject stair : plugin.getStairs()) {
                 if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
-                renderTileObject(stair, config.stairHighlightColor(), graphics);
+                if (isStairInformative(stair)) {
+                    renderTileObject(stair, config.informativeStairColor(), graphics);
+                }
             }
         }
 
         if (config.highlightWireMachine() && plugin.getWireMachine() != null) {
             GameObject wireMachine = plugin.getWireMachine();
-            if (wireMachine.getId() == 22730) {
+            if (wireMachine.getId() == ObjectIDs.WIRE_MACHINE_ACTIVE) {
                 renderTileObject(wireMachine, config.wireMachineHighlightColor(), graphics);
             } else {
                 renderWireTimer(graphics);
@@ -158,6 +172,14 @@ public class DKLampsOverlay extends Overlay {
 
         List<WorldPoint> path = plugin.getShortestPath();
         if (path == null || path.isEmpty()) {
+            return;
+        }
+
+        // For bank and wire machine paths, ignore max distance limit
+        String targetType = plugin.getCurrentTargetType();
+        boolean isUtilityTarget = "Bank".equals(targetType) || "Wire Machine".equals(targetType);
+        
+        if (!isUtilityTarget && config.maxPathDistance() > 0 && path.size() > config.maxPathDistance()) {
             return;
         }
 
@@ -254,6 +276,33 @@ public class DKLampsOverlay extends Overlay {
             }
         }
         return false;
+    }
+
+    private boolean isStairInformative(GameObject stair) {
+        WorldPoint stairLocation = stair.getWorldLocation();
+        
+        // Check all planes that this stair could lead to
+        for (int plane = 0; plane <= 2; plane++) {
+            if (plane == stairLocation.getPlane()) {
+                continue; // Skip current plane
+            }
+            
+            WorldPoint targetPlane = new WorldPoint(stairLocation.getX(), stairLocation.getY(), plane);
+            com.dklamps.enums.Area targetArea = DKLampsHelper.getArea(targetPlane);
+            
+            if (targetArea != null) {
+                // Check if this area has any lamps with unknown status
+                Set<Lamp> lampsInArea = DKLampsHelper.getLampsByArea(targetArea);
+                for (Lamp lamp : lampsInArea) {
+                    LampStatus status = plugin.getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
+                    if (status == LampStatus.UNKNOWN) {
+                        return true; // This stair leads to an area with unknown lamp information
+                    }
+                }
+            }
+        }
+        
+        return false; // This stair doesn't lead to any areas with unknown information
     }
 
     private void renderWireTimer(Graphics2D graphics) {
