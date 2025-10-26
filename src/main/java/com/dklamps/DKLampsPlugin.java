@@ -660,7 +660,7 @@ public class DKLampsPlugin extends Plugin {
         final WorldPoint playerPos = playerLocation;
         final WorldPoint target = targetLocation;
 
-        if (isInBankArea(playerLocation) && targetType.equals("bank")) {
+        if (isInBankArea(playerLocation) && targetType.equals("Bank")) {
             shortestPath.clear();
             return;
         }
