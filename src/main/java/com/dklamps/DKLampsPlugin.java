@@ -347,7 +347,11 @@ public class DKLampsPlugin extends Plugin {
 
         // Only update lamp statuses when needed or on heavy operation ticks
         if (needsLampStatusUpdate || isHeavyOperationTick) {
-            updateLampStatuses(currentArea);
+            lampStatuses = DKLampsHelper.updateLampStatuses(
+                lampStatuses, 
+                brokenLamps, 
+                needsLampStatusUpdate, 
+                currentArea);
             needsLampStatusUpdate = false;
         }
 
@@ -370,50 +374,6 @@ public class DKLampsPlugin extends Plugin {
         previouslyBrokenLamps.clear();
         previouslyBrokenLamps.addAll(brokenLamps);
         lastArea = currentArea;
-    }
-
-    private void updateLampStatuses(Area currentArea) {
-        // Update current area lamp statuses
-        Set<Lamp> lampsInCurrentArea = DKLampsHelper.getLampsByArea(currentArea);
-        for (Lamp lamp : lampsInCurrentArea) {
-            lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
-        }
-
-        // Update opposite area lamp statuses
-        Area oppositeArea = currentArea.getOpposite();
-        if (oppositeArea != null) {
-            Set<Lamp> validOppositeLamps = DKLampsHelper.getValidOppositeLamps(currentArea);
-            for (Lamp lamp : validOppositeLamps) {
-                lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
-            }
-            
-            // Reset statuses for lamps outside current and opposite areas when lamps are fixed
-            if (!reusableFixedLamps.isEmpty()) {
-                for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet()) {
-                    Area lampArea = entry.getKey().getArea();
-                    if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.WORKING) {
-                        lampStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
-                    }
-                }
-            }
-        }
-
-        // Optimize: Count broken lamps without stream for better performance
-        int totalBroken = 0;
-        for (LampStatus status : lampStatuses.values()) {
-            if (status == LampStatus.BROKEN) {
-                totalBroken++;
-            }
-        }
-
-        // If we have exactly 10 broken lamps, mark all others as working
-        if (totalBroken == 10) {
-            for (Lamp lamp : Lamp.values()) {
-                if (lampStatuses.get(lamp) != LampStatus.BROKEN) {
-                    lampStatuses.put(lamp, LampStatus.WORKING);
-                }
-            }
-        }
     }
 
     private void logClosestLamp() {
