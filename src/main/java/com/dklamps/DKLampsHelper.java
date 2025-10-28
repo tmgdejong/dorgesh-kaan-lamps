@@ -94,23 +94,10 @@ public class DKLampsHelper {
         return LAMPS_BY_OBJECT_ID.containsKey(objectId);
     }
 
-    public static Set<Lamp> getBrokenLamps(int varbitValue) {
-        Set<Lamp> brokenLamps = Sets.newEnumSet(Collections.emptySet(), Lamp.class);
-        for (int i = 0; i < 32; i++) {
-            if ((varbitValue & (1 << i)) != 0) {
-                Set<Lamp> lamps = LAMPS_BY_BIT_POSITION.get(i);
-                if (lamps != null) {
-                    brokenLamps.addAll(lamps);
-                }
-            }
-        }
-        return brokenLamps;
-    }
-
     public static Set<Lamp> getBrokenLamps(int varbitValue, Area currentArea) {
         Set<Lamp> brokenLamps = Sets.newEnumSet(Collections.emptySet(), Lamp.class);
         if (currentArea == null) {
-            return getBrokenLamps(varbitValue);
+            return brokenLamps;
         }
 
         Area oppositeArea = currentArea.getOpposite();
@@ -171,6 +158,7 @@ public class DKLampsHelper {
         for (Lamp lamp : Lamp.values()) {
             lampStatuses.put(lamp, LampStatus.UNKNOWN);
         }
+        return lampStatuses;
     }
 
     public static Map<Lamp, LampStatus> updateLampStatuses(
@@ -226,5 +214,6 @@ public class DKLampsHelper {
                 }
             }
         }
+        return lampStatuses;
     }
 }
