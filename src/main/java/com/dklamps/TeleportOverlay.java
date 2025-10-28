@@ -3,15 +3,12 @@ package com.dklamps;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
 import java.util.List;
 import javax.inject.Inject;
-import net.runelite.api.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
-import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
 public class TeleportOverlay extends WidgetItemOverlay
 {
@@ -33,7 +30,7 @@ public class TeleportOverlay extends WidgetItemOverlay
     public void renderItemOverlay(Graphics2D graphics, int itemId, WidgetItem itemWidget)
     {
         // Use the correct Item ID for your sphere here
-        if (itemId != ObjectIDs.TELEPORT_SPHERE_ID)
+        if (itemId != DKLampsConstants.TELEPORT_SPHERE_ID)
         {
             return;
         }

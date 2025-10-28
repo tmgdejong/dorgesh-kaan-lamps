@@ -1,6 +1,6 @@
 package com.dklamps.enums;
 
-import com.dklamps.ObjectIDs;
+import com.dklamps.DKLampsConstants;
 
 import net.runelite.api.Client;
 import net.runelite.api.Item;
@@ -21,9 +21,9 @@ public enum InventoryState {
         boolean hasEmptyBulbs = false;
 
         for (Item item : inventory.getItems()) {
-            if (item.getId() == ObjectIDs.LIGHT_BULB_WORKING) {
+            if (item.getId() == DKLampsConstants.LIGHT_BULB_WORKING) {
                 hasWorkingBulbs = true;
-            } else if (item.getId() == ObjectIDs.LIGHT_BULB_EMPTY) {
+            } else if (item.getId() == DKLampsConstants.LIGHT_BULB_EMPTY) {
                 hasEmptyBulbs = true;
             }
         }

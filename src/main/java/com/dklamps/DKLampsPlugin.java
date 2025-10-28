@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
 
 import javax.inject.Inject;
 
@@ -47,16 +47,11 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
-import static com.dklamps.ObjectIDs.DOOR_IDS;
-import static com.dklamps.ObjectIDs.STAIR_IDS;
-import static com.dklamps.ObjectIDs.WIRE_MACHINE_IDS;
-import static com.dklamps.ObjectIDs.BANK_LOCATION;
+
 
 @Slf4j
 @PluginDescriptor(name = "Dorgesh-Kaan Lamps")
 public class DKLampsPlugin extends Plugin {
-    private static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
-    private static final int WIRE_RESPAWN_TICKS = 8;
 
     @Inject
     private Client client;
@@ -93,6 +88,8 @@ public class DKLampsPlugin extends Plugin {
     @Getter
     private final Set<GameObject> stairs = new HashSet<>();
     @Getter
+    private final Set<WorldPoint> informativeStairs = new HashSet<>();
+    @Getter
     private GameObject wireMachine;
 
     @Getter
@@ -109,23 +106,35 @@ public class DKLampsPlugin extends Plugin {
         return pathfinder;
     }
 
+    @Getter
     private Lamp lastLoggedClosestLamp = null;
     private CompletableFuture<Void> currentClosestLampTask;
     private long lastClosestLampCalculation = 0;
     private static final long CLOSEST_LAMP_COOLDOWN_MS = 600;
 
+    @Getter
     private int lampsFixed = 0;
+    @Getter
     private int lampsPerHr = 0;
+    @Getter
     private int totalLampsFixed = 0;
+    @Getter
     private int closestDistance = 0;
     private Instant start;
     
     @Getter
-    private String currentTargetType = "Lamp"; // Default to Lamp
+    private String currentTargetType = "Lamp";
     
-    // Track previous hint arrow state to detect RuneLite hint arrows
     private WorldPoint previousHintArrowPoint = null;
     private boolean previouslyHadHintArrow = false;
+    
+    private final Set<Lamp> reusableFixedLamps = new HashSet<>();
+    private final Set<Lamp> reusableBrokenLamps = new HashSet<>();
+    
+    // Optimization flags
+    private boolean needsLampStatusUpdate = false;
+    private int gameTickCounter = 0;
+    private static final int HEAVY_OPERATIONS_INTERVAL = 5; // Run heavy operations every 5 ticks
 
     @Override
     protected void startUp() throws Exception {
@@ -178,11 +187,17 @@ public class DKLampsPlugin extends Plugin {
         doors.clear();
         stairs.clear();
         wireMachine = null;
+        
+        reusableFixedLamps.clear();
+        reusableBrokenLamps.clear();
+        previouslyBrokenLamps.clear();
 
         lampsFixed = 0;
         lampsPerHr = 0;
         closestDistance = 0;
         start = null;
+        gameTickCounter = 0;
+        needsLampStatusUpdate = false;
     }
 
     private void resetLampStatuses() {
@@ -198,12 +213,12 @@ public class DKLampsPlugin extends Plugin {
 
         if (DKLampsHelper.isLamp(gameObject.getId())) {
             spawnedLamps.put(gameObject.getWorldLocation(), gameObject);
-        } else if (STAIR_IDS.contains(gameObject.getId())) {
+        } else if (DKLampsConstants.STAIR_IDS.contains(gameObject.getId())) {
             stairs.add(gameObject);
-        } else if (WIRE_MACHINE_IDS.contains(gameObject.getId())) {
+        } else if (DKLampsConstants.WIRE_MACHINE_IDS.contains(gameObject.getId())) {
             wireMachine = gameObject;
-            if (gameObject.getId() == 22731) {
-                wireRespawnTime = Instant.now().plusMillis((WIRE_RESPAWN_TICKS) * 600);
+            if (gameObject.getId() == DKLampsConstants.WIRE_MACHINE_INACTIVE) {
+                wireRespawnTime = Instant.now().plusMillis((DKLampsConstants.WIRE_RESPAWN_TICKS) * 600);
             }
         }
     }
@@ -213,9 +228,9 @@ public class DKLampsPlugin extends Plugin {
         GameObject gameObject = event.getGameObject();
         if (DKLampsHelper.isLamp(gameObject.getId())) {
             spawnedLamps.remove(gameObject.getWorldLocation());
-        } else if (STAIR_IDS.contains(gameObject.getId())) {
+        } else if (DKLampsConstants.STAIR_IDS.contains(gameObject.getId())) {
             stairs.remove(gameObject);
-        } else if (WIRE_MACHINE_IDS.contains(gameObject.getId())) {
+        } else if (DKLampsConstants.WIRE_MACHINE_IDS.contains(gameObject.getId())) {
             wireMachine = null;
         }
     }
@@ -223,7 +238,7 @@ public class DKLampsPlugin extends Plugin {
     @Subscribe
     public void onWallObjectSpawned(WallObjectSpawned event) {
         WallObject wallObject = event.getWallObject();
-        if (DOOR_IDS.contains(wallObject.getId())) {
+        if (DKLampsConstants.DOOR_IDS.contains(wallObject.getId())) {
             doors.add(wallObject);
         }
     }
@@ -231,7 +246,7 @@ public class DKLampsPlugin extends Plugin {
     @Subscribe
     public void onWallObjectDespawned(WallObjectDespawned event) {
         WallObject wallObject = event.getWallObject();
-        if (DOOR_IDS.contains(wallObject.getId())) {
+        if (DKLampsConstants.DOOR_IDS.contains(wallObject.getId())) {
             doors.remove(wallObject);
         }
     }
@@ -246,7 +261,6 @@ public class DKLampsPlugin extends Plugin {
             stairs.clear();
             wireMachine = null;
             
-            // Reset hint arrow tracking
             previousHintArrowPoint = null;
             previouslyHadHintArrow = false;
 
@@ -261,12 +275,9 @@ public class DKLampsPlugin extends Plugin {
     @Subscribe
     public void onChatMessage(ChatMessage chatMessage) {
         String message = chatMessage.getMessage();
+        Matcher matcher = DKLampsConstants.TOTAL_LAMPS_PATTERN.matcher(message);
 
         if (message.contains("Total lights fixed:")) {
-            java.util.regex.Pattern pattern = java.util.regex.Pattern
-                    .compile("Total lights fixed: (?:<col=[^>]*>)?([0-9,]+)");
-            java.util.regex.Matcher matcher = pattern.matcher(message);
-
             if (matcher.find()) {
                 try {
                     String numberStr = matcher.group(1).replace(",", "");
@@ -274,8 +285,6 @@ public class DKLampsPlugin extends Plugin {
 
                     if (number > 0 && number > totalLampsFixed) {
                         totalLampsFixed = number;
-                        log.info("Updated total lamps fixed from chat: {} (parsed from: '{}')", totalLampsFixed,
-                                matcher.group(1));
                     }
                 } catch (NumberFormatException e) {
                     log.warn("Failed to parse number from chat message: {}", matcher.group(1));
@@ -292,6 +301,9 @@ public class DKLampsPlugin extends Plugin {
             return;
         }
 
+        gameTickCounter++;
+        boolean isHeavyOperationTick = (gameTickCounter % HEAVY_OPERATIONS_INTERVAL) == 0;
+
         Area currentArea = DKLampsHelper.getArea(client.getLocalPlayer().getWorldLocation());
         if (currentArea == null) {
             lastArea = null;
@@ -301,46 +313,100 @@ public class DKLampsPlugin extends Plugin {
 
         if (!currentArea.equals(lastArea)) {
             lastArea = currentArea;
-            previouslyBrokenLamps = new HashSet<>();
+            previouslyBrokenLamps.clear(); // Reuse existing set instead of creating new one
+            needsLampStatusUpdate = true;
             return;
         }
 
-        int lampVarbit = client.getVarbitValue(DORGESHKAAN_LAMPS_VARBIT);
-        brokenLamps = DKLampsHelper.getBrokenLamps(lampVarbit, currentArea);
+        int lampVarbit = client.getVarbitValue(DKLampsConstants.DORGESHKAAN_LAMPS_VARBIT);
+        
+        // Reuse collection instead of creating new one
+        reusableBrokenLamps.clear();
+        reusableBrokenLamps.addAll(DKLampsHelper.getBrokenLamps(lampVarbit, currentArea));
+        
+        // Check if broken lamps actually changed to avoid unnecessary work
+        if (!reusableBrokenLamps.equals(brokenLamps)) {
+            // Reuse collection for fixed lamps calculation
+            reusableFixedLamps.clear();
+            reusableFixedLamps.addAll(previouslyBrokenLamps);
+            reusableFixedLamps.removeAll(reusableBrokenLamps);
 
-        Set<Lamp> fixedLamps = new HashSet<>(previouslyBrokenLamps);
-        fixedLamps.removeAll(brokenLamps);
-
-        if (!fixedLamps.isEmpty()) {
-            int lampsFixedThisTick = fixedLamps.size();
-            for (int i = 0; i < lampsFixedThisTick; i++) {
-                incrementLampsFixed();
-            }
-
-            Area oppositeArea = currentArea.getOpposite();
-            for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet()) {
-                Area lampArea = entry.getKey().getArea();
-                if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.WORKING) {
-                    lampStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
+            if (!reusableFixedLamps.isEmpty()) {
+                int lampsFixedThisTick = reusableFixedLamps.size();
+                for (int i = 0; i < lampsFixedThisTick; i++) {
+                    incrementLampsFixed();
                 }
+                needsLampStatusUpdate = true;
             }
+            
+            // Update broken lamps
+            brokenLamps.clear();
+            brokenLamps.addAll(reusableBrokenLamps);
+            needsLampStatusUpdate = true;
         }
 
+        // Only update lamp statuses when needed or on heavy operation ticks
+        if (needsLampStatusUpdate || isHeavyOperationTick) {
+            updateLampStatuses(currentArea);
+            needsLampStatusUpdate = false;
+        }
+
+        // Only update UI when visible and on heavy operation ticks to reduce overhead
+        if (panel.isVisible() && isHeavyOperationTick) {
+            panel.update();
+        }
+
+        // Run expensive operations less frequently
+        if (isHeavyOperationTick) {
+            detectInformativeStairs();
+        }
+
+        detectRuneLiteHintArrow();
+        client.clearHintArrow();
+
+        logClosestLamp();
+
+        // Reuse collection instead of creating new one
+        previouslyBrokenLamps.clear();
+        previouslyBrokenLamps.addAll(brokenLamps);
+        lastArea = currentArea;
+    }
+
+    private void updateLampStatuses(Area currentArea) {
+        // Update current area lamp statuses
         Set<Lamp> lampsInCurrentArea = DKLampsHelper.getLampsByArea(currentArea);
         for (Lamp lamp : lampsInCurrentArea) {
             lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
         }
 
+        // Update opposite area lamp statuses
         Area oppositeArea = currentArea.getOpposite();
         if (oppositeArea != null) {
             Set<Lamp> validOppositeLamps = DKLampsHelper.getValidOppositeLamps(currentArea);
             for (Lamp lamp : validOppositeLamps) {
                 lampStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
             }
+            
+            // Reset statuses for lamps outside current and opposite areas when lamps are fixed
+            if (!reusableFixedLamps.isEmpty()) {
+                for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet()) {
+                    Area lampArea = entry.getKey().getArea();
+                    if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.WORKING) {
+                        lampStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
+                    }
+                }
+            }
         }
 
-        long totalBroken = lampStatuses.values().stream().filter(s -> s == LampStatus.BROKEN).count();
+        // Optimize: Count broken lamps without stream for better performance
+        int totalBroken = 0;
+        for (LampStatus status : lampStatuses.values()) {
+            if (status == LampStatus.BROKEN) {
+                totalBroken++;
+            }
+        }
 
+        // If we have exactly 10 broken lamps, mark all others as working
         if (totalBroken == 10) {
             for (Lamp lamp : Lamp.values()) {
                 if (lampStatuses.get(lamp) != LampStatus.BROKEN) {
@@ -348,20 +414,6 @@ public class DKLampsPlugin extends Plugin {
                 }
             }
         }
-
-        if (panel.isVisible()) {
-            panel.update();
-        }
-
-        // Always clear hint arrows - we don't want to show them
-        // But first check if RuneLite set one pointing to a lamp
-        detectRuneLiteHintArrow();
-        client.clearHintArrow();
-
-        logClosestLamp();
-
-        previouslyBrokenLamps = new HashSet<>(brokenLamps);
-        lastArea = currentArea;
     }
 
     private void logClosestLamp() {
@@ -377,7 +429,7 @@ public class DKLampsPlugin extends Plugin {
 
         switch (inventoryState) {
             case NO_LIGHT_BULBS:
-                targetLocation = BANK_LOCATION;
+                targetLocation = DKLampsConstants.BANK_LOCATION;
                 targetType = "Bank";
                 break;
 
@@ -405,12 +457,14 @@ public class DKLampsPlugin extends Plugin {
     }
 
     private void findClosestBrokenLamp() {
-        Set<Lamp> allBrokenLamps = new HashSet<>();
+        // Reuse collection instead of creating new one
+        reusableBrokenLamps.clear();
         for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet()) {
             if (entry.getValue() == LampStatus.BROKEN) {
-                allBrokenLamps.add(entry.getKey());
+                reusableBrokenLamps.add(entry.getKey());
             }
         }
+        final Set<Lamp> allBrokenLamps = reusableBrokenLamps;
 
         if (allBrokenLamps.isEmpty()) {
             if (lastLoggedClosestLamp != null) {
@@ -434,7 +488,7 @@ public class DKLampsPlugin extends Plugin {
         }
 
         final WorldPoint playerPos = playerLocation;
-        final Set<Lamp> lampsToCheck = new HashSet<>(allBrokenLamps);
+        final Set<Lamp> lampsToCheck = allBrokenLamps; // Use the reused collection directly
 
         currentClosestLampTask = CompletableFuture.runAsync(() -> {
             try {
@@ -561,9 +615,40 @@ public class DKLampsPlugin extends Plugin {
         });
     }
 
-    public Lamp getClosestLamp() {
-        return lastLoggedClosestLamp;
+    private void detectInformativeStairs() {
+        informativeStairs.clear(); // Clear previous results
+        
+        for (GameObject stair : stairs) {
+            WorldPoint stairLocation = stair.getWorldLocation();
+            
+            for (int plane = 0; plane <= 2; plane++) {
+                if (plane == stairLocation.getPlane()) {
+                    continue; // Skip current plane
+                }
+                
+                WorldPoint targetPlane = new WorldPoint(stairLocation.getX(), stairLocation.getY(), plane);
+                com.dklamps.enums.Area targetArea = DKLampsHelper.getArea(targetPlane);
+                
+                if (targetArea != null) {
+                    // Check if this area has any lamps with unknown status
+                    Set<Lamp> lampsInArea = DKLampsHelper.getLampsByArea(targetArea);
+                    boolean hasUnknownLamps = false;
+                    for (Lamp lamp : lampsInArea) {
+                        LampStatus status = lampStatuses.getOrDefault(lamp, LampStatus.UNKNOWN);
+                        if (status == LampStatus.UNKNOWN) {
+                            hasUnknownLamps = true;
+                            break; // Early exit when we find unknown lamps
+                        }
+                    }
+                    if (hasUnknownLamps) {
+                        informativeStairs.add(stairLocation);
+                        break; // No need to check other planes for this stair
+                    }
+                }
+            }
+        }
     }
+
 
     private void detectRuneLiteHintArrow() {
         boolean currentlyHasHintArrow = client.hasHintArrow();
@@ -613,22 +698,6 @@ public class DKLampsPlugin extends Plugin {
         }
     }
 
-    public int getClosestDistance() {
-        return closestDistance;
-    }
-
-    public int getLampsFixed() {
-        return lampsFixed;
-    }
-
-    public int getLampsPerHr() {
-        return lampsPerHr;
-    }
-
-    public int getTotalLampsFixed() {
-        return totalLampsFixed;
-    }
-
     @Provides
     DKLampsConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(DKLampsConfig.class);
@@ -643,7 +712,7 @@ public class DKLampsPlugin extends Plugin {
     }
 
     private boolean isInBankArea(WorldPoint playerLocation) {
-        return playerLocation.distanceTo(BANK_LOCATION) <= 5;
+        return playerLocation.distanceTo(DKLampsConstants.BANK_LOCATION) <= 5;
     }
 
     private void calculatePathToTarget(WorldPoint targetLocation, String targetType, WorldPoint playerLocation) {

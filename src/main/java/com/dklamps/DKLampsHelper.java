@@ -2,10 +2,12 @@ package com.dklamps;
 
 import com.dklamps.enums.Area;
 import com.dklamps.enums.Lamp;
+import com.dklamps.enums.LampStatus;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,12 +15,6 @@ import java.util.stream.Collectors;
 import net.runelite.api.coords.WorldPoint;
 
 public class DKLampsHelper {
-    private static final int WORLD_MAP_LINE = 5312;
-    private static final int DK_WEST_VALUE = 2688;
-    private static final int DK_EAST_VALUE = 2751;
-    private static final int DK_NORTH_VALUE = 5375;
-    private static final int DK_SOUTH_VALUE = 5248;
-
     private static final Map<Area, Set<Lamp>> LAMPS_BY_AREA;
     private static final Map<Integer, Set<Lamp>> LAMPS_BY_BIT_POSITION;
     private static final Map<Integer, Lamp> LAMPS_BY_OBJECT_ID;
@@ -66,16 +62,17 @@ public class DKLampsHelper {
         int y = worldPoint.getY();
         int x = worldPoint.getX();
 
-        if (x < DK_WEST_VALUE || x > DK_EAST_VALUE || y > DK_NORTH_VALUE || y < DK_SOUTH_VALUE) {
+        if (x < DKLampsConstants.DK_WEST_VALUE || x > DKLampsConstants.DK_EAST_VALUE
+                || y > DKLampsConstants.DK_NORTH_VALUE || y < DKLampsConstants.DK_SOUTH_VALUE) {
             return null;
         }
 
         if (plane == 0) {
-            return y >= WORLD_MAP_LINE ? Area.P0_N : Area.P0_S;
+            return y >= DKLampsConstants.WORLD_MAP_LINE ? Area.P0_N : Area.P0_S;
         } else if (plane == 1) {
-            return y >= WORLD_MAP_LINE ? Area.P1_N : Area.P1_S;
+            return y >= DKLampsConstants.WORLD_MAP_LINE ? Area.P1_N : Area.P1_S;
         } else if (plane == 2) {
-            return y >= WORLD_MAP_LINE ? Area.P2_N : Area.P2_S;
+            return y >= DKLampsConstants.WORLD_MAP_LINE ? Area.P2_N : Area.P2_S;
         }
         return null;
     }
@@ -168,5 +165,66 @@ public class DKLampsHelper {
                 .filter(lamp -> lamp.getBitPosition() <= maxBitPosition
                         && !currentAreaBitPositions.contains(lamp.getBitPosition()))
                 .collect(Collectors.toSet());
+    }
+
+    public static void resetLampStatuses(Map<Lamp, LampStatus> lampStatuses) {
+        for (Lamp lamp : Lamp.values()) {
+            lampStatuses.put(lamp, LampStatus.UNKNOWN);
+        }
+    }
+
+    public static Map<Lamp, LampStatus> updateLampStatuses(
+            Map<Lamp, LampStatus> lampStatuses,
+            Set<Lamp> brokenLamps,
+            boolean isLampsFixed,
+            Area currentArea) {
+
+        Map<Lamp, LampStatus> updatedStatuses = new EnumMap<>(lampStatuses);
+
+        Set<Lamp> lampsInCurrentArea = getLampsByArea(currentArea);
+        for (Lamp lamp : lampsInCurrentArea) {
+            updatedStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
+        }
+
+        Area oppositeArea = currentArea.getOpposite();
+        if (oppositeArea != null) {
+            Set<Lamp> validOppositeLamps = getValidOppositeLamps(currentArea);
+            for (Lamp lamp : validOppositeLamps) {
+                updatedStatuses.put(lamp, brokenLamps.contains(lamp) ? LampStatus.BROKEN : LampStatus.WORKING);
+            }
+            
+            if (isLampsFixed) {
+                for (Map.Entry<Lamp, LampStatus> entry : updatedStatuses.entrySet()) {
+                    Area lampArea = entry.getKey().getArea();
+                    if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.WORKING) {
+                        updatedStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
+                    }
+                }
+            }
+        }
+
+        return updatedStatuses;
+    }
+
+    public static int countBrokenLamps(Map<Lamp, LampStatus> lampStatuses) {
+        int totalBroken = 0;
+        for (LampStatus status : lampStatuses.values()) {
+            if (status == LampStatus.BROKEN) {
+                totalBroken++;
+            }
+        }
+        return totalBroken;
+    }
+
+    public static void autoFixAllLampsIfNeeded(Map<Lamp, LampStatus> lampStatuses) {
+        int totalBroken = countBrokenLamps(lampStatuses);
+
+        if (totalBroken == 10) {
+            for (Lamp lamp : Lamp.values()) {
+                if (lampStatuses.get(lamp) != LampStatus.BROKEN) {
+                    lampStatuses.put(lamp, LampStatus.WORKING);
+                }
+            }
+        }
     }
 }
