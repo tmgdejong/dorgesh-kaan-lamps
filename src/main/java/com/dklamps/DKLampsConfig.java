@@ -17,12 +17,12 @@ public interface DKLampsConfig extends Config{
 
 
 	@ConfigItem(
-		keyName = "showPathToClosestLamp",
-		name = "Show Path to Closest Lamp",
-		description = "Draw a path on the ground to the closest broken lamp",
+		keyName = "showPathToLocation",
+		name = "Show Path to Locations",
+		description = "Draw a path on the ground to the closest broken lamp or utility locations",
 		position = 3
 	)
-	default boolean showPathToClosestLamp() {
+	default boolean showPathToLocation() {
 		return true;
 	}
 
@@ -34,6 +34,16 @@ public interface DKLampsConfig extends Config{
 	)
 	default Color pathColor() {
 		return new Color(255,102,102);
+	}
+
+    @ConfigItem(
+		keyName = "utilityPathColor",
+		name = "Utility Path Color",
+		description = "The color of the path to the bank or wiring machine",
+		position = 4
+	)
+	default Color utilityPathColor() {
+		return new Color(102,255,102);
 	}
 
     @ConfigItem(
@@ -226,42 +236,6 @@ public interface DKLampsConfig extends Config{
         return true;
     }
 
-    @ConfigItem(
-        keyName = "showSessionFixed",
-        name = "Show Session Fixed",
-        description = "Show lamps fixed this session",
-        position = 83,
-        section = statsOverlaySection
-    )
-    default boolean showSessionFixed()
-    {
-        return true;
-    }
-
-    @ConfigItem(
-        keyName = "showLampsPerHour",
-        name = "Show Lamps/Hour",
-        description = "Show lamps fixed per hour",
-        position = 84,
-        section = statsOverlaySection
-    )
-    default boolean showLampsPerHour()
-    {
-        return true;
-    }
-
-    @ConfigItem(
-        keyName = "showTotalFixed",
-        name = "Show Total Fixed",
-        description = "Show all-time total lamps fixed",
-        position = 85,
-        section = statsOverlaySection
-    )
-    default boolean showTotalFixed()
-    {
-        return true;
-    }
-
     @ConfigSection(
         name = "Hints",
         description = "Settings for additional hints.",
@@ -307,21 +281,10 @@ public interface DKLampsConfig extends Config{
 		name = "Highlight Informative Stairs",
 		description = "Highlight stairs/ladders that lead to areas with unknown lamp information.",
 		section = hintsSection,
-        position = 21
+        position = 20
 	)
 	default boolean highlightInformativeStairs() {
 		return true;
-	}
-
-    @ConfigItem(
-		keyName = "informativeStairColor",
-		name = "Informative Stair Color",
-		description = "The color to highlight informative stairs/ladders.",
-		section = hintsSection,
-        position = 22
-	)
-	default Color informativeStairColor() {
-		return Color.MAGENTA;
 	}
 
     @ConfigItem(
@@ -344,6 +307,17 @@ public interface DKLampsConfig extends Config{
 	)
 	default Color doorHighlightColor() {
 		return Color.YELLOW;
+	}
+
+    @ConfigItem(
+		keyName = "informativeStairColor",
+		name = "Informative Stair Color",
+		description = "The color to highlight informative stairs/ladders.",
+		section = hintsSection,
+        position = 120
+	)
+	default Color informativeStairColor() {
+		return Color.MAGENTA;
 	}
 
     @ConfigSection(

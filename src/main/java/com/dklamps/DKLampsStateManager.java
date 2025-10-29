@@ -3,20 +3,23 @@ package com.dklamps;
 import com.dklamps.enums.Area;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
-import java.time.Instant;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.HintArrowType;
 import net.runelite.api.WallObject;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 
 @Slf4j
 public class DKLampsStateManager {
@@ -37,11 +40,12 @@ public class DKLampsStateManager {
     @Getter
     private GameObject wireMachine;
     @Getter
-    private Instant wireRespawnTime;
-    
+    private int wireRespawnTick = -1;
+
     private Set<Lamp> previouslyBrokenLamps = new HashSet<>();
     private Area lastArea = null;
-    private WorldPoint previousHintArrowPoint = null;
+    private String lastHintDirection = null;
+    private String lastHintFloor = null;
     private final Set<Lamp> fixedLamps = new HashSet<>();
     @Getter
     private final Set<Lamp> brokenLamps = new HashSet<>();
@@ -66,9 +70,9 @@ public class DKLampsStateManager {
 
         wireMachine = null;
         lastArea = null;
-        previousHintArrowPoint = null;
         gameTickCounter = 0;
         isLampFixed = false;
+        wireRespawnTick = -1;
     }
 
     public void onGameTick() {
@@ -88,7 +92,6 @@ public class DKLampsStateManager {
         if (!currentArea.equals(lastArea)) {
             lastArea = currentArea;
             previouslyBrokenLamps.clear();
-            isLampFixed = true;
             return;
         }
 
@@ -108,28 +111,28 @@ public class DKLampsStateManager {
             }
         }
 
-        Map<Lamp,LampStatus> newStatuses = DKLampsHelper.updateLampStatuses(
-            lampStatuses, 
-            brokenLamps, 
-            isLampFixed, 
-            currentArea);
+        Map<Lamp, LampStatus> newStatuses = DKLampsHelper.updateLampStatuses(
+                lampStatuses,
+                brokenLamps,
+                isLampFixed,
+                currentArea);
+
+        if (isLampFixed) {
+            detectRuneLiteHintArrow(newStatuses);
+            isLampFixed = false;
+        }
 
         lampStatuses.clear();
         lampStatuses.putAll(newStatuses);
-        isLampFixed = false;
 
         if (isHeavyOperationTick) {
             detectInformativeStairs();
         }
 
-        detectRuneLiteHintArrow();
-        
         previouslyBrokenLamps.clear();
         previouslyBrokenLamps.addAll(brokenLamps);
         lastArea = currentArea;
     }
-
-    // --- Event Handlers ---
 
     public void onGameObjectSpawned(GameObject gameObject) {
         if (DKLampsHelper.isLamp(gameObject.getId())) {
@@ -139,7 +142,9 @@ public class DKLampsStateManager {
         } else if (DKLampsConstants.WIRE_MACHINE_IDS.contains(gameObject.getId())) {
             wireMachine = gameObject;
             if (gameObject.getId() == DKLampsConstants.WIRE_MACHINE_INACTIVE) {
-                wireRespawnTime = Instant.now().plusMillis((DKLampsConstants.WIRE_RESPAWN_TICKS) * 600);
+                wireRespawnTick = client.getTickCount() + DKLampsConstants.WIRE_RESPAWN_TICKS;
+            } else {
+                wireRespawnTick = -1;
             }
         }
     }
@@ -151,6 +156,7 @@ public class DKLampsStateManager {
             stairs.remove(gameObject);
         } else if (DKLampsConstants.WIRE_MACHINE_IDS.contains(gameObject.getId())) {
             wireMachine = null;
+            wireRespawnTick = -1;
         }
     }
 
@@ -170,23 +176,40 @@ public class DKLampsStateManager {
         if (gameState == GameState.LOADING ||
                 gameState == GameState.LOGIN_SCREEN ||
                 gameState == GameState.HOPPING) {
-            
-            // Clear transient game object state
+
             spawnedLamps.clear();
             doors.clear();
             stairs.clear();
             wireMachine = null;
-            previousHintArrowPoint = null;
+            wireRespawnTick = -1;
 
             if (gameState != GameState.LOADING) {
-                // Clear persistent state on full logout/hop
                 brokenLamps.clear();
                 resetLampStatuses();
             }
         }
     }
-    
-    // --- Internal Logic ---
+
+    public void onChatMessage(ChatMessage chatMessage) {
+        ChatMessageType chatMessageType = chatMessage.getType();
+        String message = chatMessage.getMessage();
+
+        if (chatMessageType == ChatMessageType.GAMEMESSAGE && 
+                message.contains(DKLampsConstants.NEARBY_LAMP_CHAT_MESSAGE)) {
+            log.info("Nearby lamp chat message detected: {}", message);
+            parseNearbyLampChatMessage(message);
+        }
+    }
+
+    private void parseNearbyLampChatMessage(String message) {
+        Matcher matcher = DKLampsConstants.NEARBY_LAMP_PATTERN.matcher(message);
+        if (matcher.find()) {
+            log.info("Parsed nearby lamp hint: direction={}, floor={}",
+                    matcher.group(1), matcher.group(2));
+            lastHintDirection = matcher.group(1);
+            lastHintFloor = matcher.group(2);
+        }
+    }
 
     private void resetLampStatuses() {
         lampStatuses.clear();
@@ -194,7 +217,7 @@ public class DKLampsStateManager {
             lampStatuses.put(lamp, LampStatus.UNKNOWN);
         }
     }
-    
+
     private void detectInformativeStairs() {
         informativeStairs.clear();
         for (GameObject stair : stairs) {
@@ -205,7 +228,7 @@ public class DKLampsStateManager {
                 }
                 WorldPoint targetPlane = new WorldPoint(stairLocation.getX(), stairLocation.getY(), plane);
                 Area targetArea = DKLampsHelper.getArea(targetPlane);
-                
+
                 if (targetArea != null) {
                     Set<Lamp> lampsInArea = DKLampsHelper.getLampsByArea(targetArea);
                     boolean hasUnknownLamps = false;
@@ -225,29 +248,39 @@ public class DKLampsStateManager {
         }
     }
 
-    private void detectRuneLiteHintArrow() {
+    private void detectRuneLiteHintArrow(Map<Lamp, LampStatus> newStatuses) {
         boolean currentlyHasHintArrow = client.hasHintArrow();
         WorldPoint currentHintArrowPoint = null;
-        
+
         if (currentlyHasHintArrow && client.getHintArrowType() == HintArrowType.COORDINATE) {
             currentHintArrowPoint = client.getHintArrowPoint();
+            log.info("RuneLite hint arrow detected at {}", currentHintArrowPoint);
         }
-        
-        if (currentlyHasHintArrow && currentHintArrowPoint != null && 
-            !currentHintArrowPoint.equals(previousHintArrowPoint)) {
-            
+
+        if (currentlyHasHintArrow && currentHintArrowPoint != null) {
+
             for (Lamp lamp : Lamp.values()) {
-                if (lamp.getWorldPoint().equals(currentHintArrowPoint)) {
-                    log.info("RuneLite hint arrow detected pointing to lamp: {} at {}", 
-                            lamp.name(), currentHintArrowPoint);
-                    
-                    lampStatuses.put(lamp, LampStatus.BROKEN);
-                    brokenLamps.add(lamp);
-                    break;
+                WorldPoint lampLocation = lamp.getWorldPoint();
+                if (lampLocation.getX() == currentHintArrowPoint.getX() &&
+                    lampLocation.getY() == currentHintArrowPoint.getY()) {
+                        
+                    int playerPlane = client.getLocalPlayer().getWorldLocation().getPlane();
+                    boolean planeMatches = false;
+
+                    if (lastHintFloor.equals("upstairs") && lampLocation.getPlane() > playerPlane) {
+                        planeMatches = true;
+                    } else if (lastHintFloor.equals("downstairs") && lampLocation.getPlane() < playerPlane) {
+                        planeMatches = true;
+                    } else if (lastHintFloor.equals("on the same floor") && lampLocation.getPlane() == playerPlane) {
+                        planeMatches = true;
+                    }
+
+                    if (planeMatches) {
+                        newStatuses.put(lamp, LampStatus.BROKEN);
+                        break;
+                    }
                 }
             }
         }
-        
-        previousHintArrowPoint = currentHintArrowPoint;
     }
 }

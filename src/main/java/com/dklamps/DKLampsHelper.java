@@ -132,20 +132,16 @@ public class DKLampsHelper {
         for (int i = 0; i <= maxBitPosition; i++) {
             if ((varbitValue & (1 << i)) != 0) {
                 Set<Lamp> lampsForBit = LAMPS_BY_BIT_POSITION.getOrDefault(i, Collections.emptySet());
+
                 Lamp lampToAdd = null;
                 for (Lamp lamp : lampsForBit) {
                     if (lampsInCurrentArea.contains(lamp)) {
                         lampToAdd = lamp;
                         break;
                     }
-                }
 
-                if (lampToAdd == null) {
-                    for (Lamp lamp : lampsForBit) {
-                        if (lampsInOppositeArea.contains(lamp)) {
-                            lampToAdd = lamp;
-                            break;
-                        }
+                    if (lampsInOppositeArea.contains(lamp)) {
+                        lampToAdd = lamp;
                     }
                 }
 

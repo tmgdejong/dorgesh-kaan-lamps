@@ -5,6 +5,9 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.util.List;
 import javax.inject.Inject;
+
+import com.dklamps.enums.TargetType;
+
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.game.ItemManager;
@@ -35,14 +38,18 @@ public class TeleportOverlay extends WidgetItemOverlay
 
         List<WorldPoint> path = plugin.getNavigationManager().getShortestPath();
 
-        // Only highlight if we have a path AND it's longer than the config allows
-        if (path != null && (path.size() > config.maxPathDistance() || plugin.getStateManager().getBrokenLamps().isEmpty()))
+        if (path != null && (path.size() > config.maxPathDistance() || plugin.getStateManager().getBrokenLamps().isEmpty())
+                && plugin.getNavigationManager().getCurrentTargetType() == TargetType.LAMP)
         {
             Rectangle bounds = itemWidget.getCanvasBounds();
             Color oldColor = graphics.getColor();
 
             Color base = config.pathColor();
-            graphics.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), 128));
+
+            long phase = (System.currentTimeMillis() / 600) % 2;
+            int alpha = (phase == 0) ? 192 : 64;
+
+            graphics.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), alpha));
             graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
             graphics.setColor(oldColor);

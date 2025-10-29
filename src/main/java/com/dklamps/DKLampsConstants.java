@@ -11,7 +11,10 @@ public final class DKLampsConstants {
     public static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
     public static final int WIRE_RESPAWN_TICKS = 8;
 
-    public static final Pattern TOTAL_LAMPS_PATTERN = Pattern.compile("Total lights fixed: (?:<col=[^>]*>)?([0-9,]+)");
+    public static final String NEARBY_LAMP_CHAT_MESSAGE = "There is another broken lamp nearby";
+    public static final String TOTAL_LAMPS_FIXED_CHAT_MESSAGE = "You replace the orb. Total lights fixed: ";
+    public static final Pattern NEARBY_LAMP_PATTERN = Pattern.compile("There is another broken lamp nearby, (\\w+(?:\\s\\w+)?) of here (\\w+(?:\\s\\w+)*)\\.");
+    public static final Pattern TOTAL_LAMPS_PATTERN = Pattern.compile("You replace the orb\\. Total lights fixed: (?:<col=[^>]*>)?([0-9,]+)");
 
     // Coordinates
     public static final int WORLD_MAP_LINE = 5312; // Y
@@ -53,7 +56,7 @@ public final class DKLampsConstants {
     );
     
     // Bank location in Dorgesh-Kaan
-    public static final WorldPoint WIRE_MACHINE_LOCATION = new WorldPoint(2722, 5278, 0);
+    public static final WorldPoint WIRE_MACHINE_LOCATION = new WorldPoint(2716, 5274, 0);
     public static final WorldPoint BANK_LOCATION = new WorldPoint(2702, 5349, 0);
     public static final Set<WorldPoint> BANK_TILES = ImmutableSet.of(
             new WorldPoint(2701, 5347, 0),

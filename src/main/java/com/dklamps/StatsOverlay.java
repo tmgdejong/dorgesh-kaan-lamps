@@ -1,6 +1,8 @@
 package com.dklamps;
 
 import com.dklamps.enums.Area;
+import com.dklamps.enums.TargetType;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -67,16 +69,18 @@ public class StatsOverlay extends OverlayPanel
             .left("Distance:")
             .right(distText + " tiles");
 
-            if (closestDist != Integer.MAX_VALUE && closestDist > config.maxPathDistance()) {
+            if (closestDist != Integer.MAX_VALUE
+                    && closestDist > config.maxPathDistance()
+                    && plugin.getNavigationManager().getCurrentTargetType() == TargetType.LAMP) {
                 boolean blinkOn = (System.currentTimeMillis() / 600) % 2 == 0;
-                line.rightColor(blinkOn ? Color.RED : config.pathColor());
+                line.rightColor(blinkOn ? Color.RED : Color.WHITE);
             }
 
             panelComponent.getChildren().add(line.build());
         }
 
         int lampsFixed = plugin.getStatsTracker().getLampsFixed();
-        if (lampsFixed > 0 && config.showSessionFixed())
+        if (lampsFixed > 0)
         {
             panelComponent.getChildren().add(LineComponent.builder()
                 .left("Lamps fixed:")
@@ -84,7 +88,7 @@ public class StatsOverlay extends OverlayPanel
                 .build());
 
             int lampsPerHr = plugin.getStatsTracker().getLampsPerHr();
-            if (lampsPerHr > 0 && config.showLampsPerHour())
+            if (lampsPerHr > 0)
             {
                 panelComponent.getChildren().add(LineComponent.builder()
                     .left("Lamps/hr:")
@@ -93,13 +97,10 @@ public class StatsOverlay extends OverlayPanel
             }
         }
 
-        if (config.showTotalFixed())
-        {
-            panelComponent.getChildren().add(LineComponent.builder()
-                .left("Total Fixed:")
-                .right(String.valueOf(plugin.getStatsTracker().getTotalLampsFixed()))
-                .build());
-        }
+        panelComponent.getChildren().add(LineComponent.builder()
+            .left("Total Fixed:")
+            .right(String.valueOf(plugin.getStatsTracker().getTotalLampsFixed()))
+            .build());
 
         return super.render(graphics);
     }

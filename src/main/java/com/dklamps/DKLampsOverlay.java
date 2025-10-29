@@ -5,8 +5,8 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.Shape;
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -96,7 +96,7 @@ public class DKLampsOverlay extends Overlay {
             }
         }
 
-        drawPathToClosestLamp(graphics, pathPoints);
+        drawPathToLocation(graphics, pathPoints);
 
         return null;
     }
@@ -157,8 +157,8 @@ public class DKLampsOverlay extends Overlay {
         }
     }
 
-    private void drawPathToClosestLamp(Graphics2D graphics, Set<WorldPoint> pathPoints) {
-        if (!config.showPathToClosestLamp()) {
+    private void drawPathToLocation(Graphics2D graphics, Set<WorldPoint> pathPoints) {
+        if (!config.showPathToLocation()) {
             return;
         }
 
@@ -192,7 +192,7 @@ public class DKLampsOverlay extends Overlay {
 
             Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
             if (poly != null) {
-                OverlayUtil.renderPolygon(graphics, poly, config.pathColor());
+                OverlayUtil.renderPolygon(graphics, poly, isUtilityTarget ? config.utilityPathColor() : config.pathColor());
             }
 
             List<Transport> transports = plugin.getPathfinder().getTransportsAt(point);
@@ -203,13 +203,13 @@ public class DKLampsOverlay extends Overlay {
             }
         }
 
-        highlightTransportsOnPath(graphics, activeTransports);
-        highlightDoorsOnPath(graphics, pathPoints);
+        highlightTransportsOnPath(graphics, activeTransports, isUtilityTarget);
+        highlightDoorsOnPath(graphics, pathPoints, isUtilityTarget);
 
     }
-    
-    private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports) {
-        
+
+    private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports, boolean isUtilityTarget) {
+
         if (activeTransports.isEmpty()) {
             return;
         }
@@ -221,13 +221,13 @@ public class DKLampsOverlay extends Overlay {
             
             WorldPoint stairLocation = stair.getWorldLocation();
             if (isStairBetweenTransportPoints(stairLocation, activeTransports)) {
-                renderTileObject(stair, config.pathColor(), graphics);
+                renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics);
             }
         }
         
     }
     
-    private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints) {
+    private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints, boolean isUtilityTarget) {
         for (WallObject door : plugin.getStateManager().getDoors()) {
             if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
@@ -235,7 +235,7 @@ public class DKLampsOverlay extends Overlay {
             
             WorldPoint doorLocation = door.getWorldLocation();
             if (pathPoints.contains(doorLocation)) {
-                renderTileObject(door, config.pathColor(), graphics);
+                renderTileObject(door, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics);
             }
         }
     }
@@ -273,18 +273,30 @@ public class DKLampsOverlay extends Overlay {
     }
 
     private void renderWireTimer(Graphics2D graphics) {
-        if (plugin.getStateManager().getWireRespawnTime() == null || plugin.getStateManager().getWireMachine() == null) {
+        int respawnTick = plugin.getStateManager().getWireRespawnTick();
+        
+        if (respawnTick == -1 || plugin.getStateManager().getWireMachine() == null) {
             return;
         }
+
+        int currentTick = client.getTickCount();
+        int ticksRemaining = respawnTick - currentTick;
 
         Instant now = Instant.now();
-        if (now.isAfter(plugin.getStateManager().getWireRespawnTime())) {
+        Instant lastTick = plugin.getLastTickInstant();
+        long millisSinceLastTick = Duration.between(lastTick, now).toMillis();
+
+        millisSinceLastTick = Math.max(0, Math.min(millisSinceLastTick, 600));
+
+        double tickFractionPassed = millisSinceLastTick / 600.0;
+
+        double smoothTicksRemaining = Math.max(0.0, (double)ticksRemaining - tickFractionPassed);
+
+        if (smoothTicksRemaining <= 0) {
             return;
         }
 
-        Duration duration = Duration.between(now, plugin.getStateManager().getWireRespawnTime());
-        double seconds = (double) Math.ceil(duration.toMillis() / 100.0) / 10.0;
-        double progress = (double) duration.toMillis() / ((DKLampsConstants.WIRE_RESPAWN_TICKS) * 600.0);
+        double progress = smoothTicksRemaining / DKLampsConstants.WIRE_RESPAWN_TICKS;
 
         LocalPoint lp = plugin.getStateManager().getWireMachine().getLocalLocation();
         Point point = net.runelite.api.Perspective.getCanvasTextLocation(client, graphics, lp, " ", 0);
@@ -302,10 +314,10 @@ public class DKLampsOverlay extends Overlay {
             pie.setProgress(progress);
             pie.render(graphics);
         } else if (config.timerType() == TimerType.TICKS) {
-            long ticks = (long) Math.ceil(duration.toMillis() / 600.0);
-            String text = String.valueOf(ticks);
+            String text = String.valueOf(ticksRemaining);
             OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
         } else if (config.timerType() == TimerType.SECONDS) {
+            double seconds = ticksRemaining * 0.6;
             String text = String.format("%.1f", seconds);
             OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
         }

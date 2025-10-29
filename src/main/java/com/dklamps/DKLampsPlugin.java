@@ -5,10 +5,9 @@ import com.dklamps.pathfinder.Pathfinder;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-
 import javax.inject.Inject;
 
 import lombok.Getter;
@@ -71,6 +70,9 @@ public class DKLampsPlugin extends Plugin {
 
     @Getter
     private Pathfinder pathfinder;
+
+    @Getter
+    private Instant lastTickInstant = Instant.now();
 
     @Override
     protected void startUp() throws Exception {
@@ -155,25 +157,14 @@ public class DKLampsPlugin extends Plugin {
 
     @Subscribe
     public void onChatMessage(ChatMessage chatMessage) {
-        String message = chatMessage.getMessage();
-        Matcher matcher = DKLampsConstants.TOTAL_LAMPS_PATTERN.matcher(message);
-
-        if (message.contains("Total lights fixed:")) {
-            if (matcher.find()) {
-                try {
-                    String numberStr = matcher.group(1).replace(",", "");
-                    int number = Integer.parseInt(numberStr);
-
-                    statsTracker.updateTotalLampsFixed(number);
-                } catch (NumberFormatException e) {
-                    log.warn("Failed to parse number from chat message: {}", matcher.group(1));
-                }
-            }
-        }
+        stateManager.onChatMessage(chatMessage);
+        statsTracker.onChatMessage(chatMessage);
     }
 
     @Subscribe
     public void onGameTick(GameTick gameTick) {
+        lastTickInstant = Instant.now();
+        
         if (client.getLocalPlayer() == null) {
             return;
         }

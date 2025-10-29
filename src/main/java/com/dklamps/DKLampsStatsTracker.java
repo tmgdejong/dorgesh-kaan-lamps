@@ -2,9 +2,12 @@ package com.dklamps;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.regex.Matcher;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
+import net.runelite.api.events.ChatMessage;
 
 @Slf4j
 public class DKLampsStatsTracker {
@@ -35,9 +38,30 @@ public class DKLampsStatsTracker {
         }
     }
 
-    public void updateTotalLampsFixed(int newTotal) {
-        if (newTotal > 0 && newTotal > this.totalLampsFixed) {
-            this.totalLampsFixed = newTotal;
+    public void onChatMessage(ChatMessage chatMessage) {
+        ChatMessageType chatMessageType = chatMessage.getType();
+        String message = chatMessage.getMessage();
+
+        if (chatMessageType == ChatMessageType.SPAM
+                && message.contains(DKLampsConstants.TOTAL_LAMPS_FIXED_CHAT_MESSAGE)) {
+            updateTotalLampsFixed(message);
+        }
+    }
+
+    public void updateTotalLampsFixed(String message) {
+        Matcher matcher = DKLampsConstants.TOTAL_LAMPS_PATTERN.matcher(message);
+
+        if (matcher.find()) {
+            try {
+                String numberStr = matcher.group(1).replace(",", "");
+                int number = Integer.parseInt(numberStr);
+
+                if (number > 0 && number > this.totalLampsFixed) {
+                    this.totalLampsFixed = number;
+                }
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse number from chat message: {}", matcher.group(1));
+            }
         }
     }
 
