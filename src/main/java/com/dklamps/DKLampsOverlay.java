@@ -1,8 +1,5 @@
 package com.dklamps;
 
-import static com.dklamps.DKLampsConstants.WIRE_MACHINE_INACTIVE;
-
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -15,13 +12,12 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 
-import com.dklamps.enums.HighlightTypes;
+import com.dklamps.enums.HighlightType;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
-import com.dklamps.enums.TimerTypes;
+import com.dklamps.enums.TargetType;
+import com.dklamps.enums.TimerType;
 import com.dklamps.enums.Transport;
-import com.dklamps.DKLampsConstants;
-
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
@@ -40,7 +36,6 @@ import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
 @Slf4j
 public class DKLampsOverlay extends Overlay {
-    private static final int WIRE_RESPAWN_TICKS = 8;
 
     private final Client client;
     private final DKLampsPlugin plugin;
@@ -64,12 +59,12 @@ public class DKLampsOverlay extends Overlay {
             return null;
         }
 
-        Set<WorldPoint> pathPoints = new HashSet<>(plugin.getShortestPath());
+        Set<WorldPoint> pathPoints = new HashSet<>(plugin.getNavigationManager().getShortestPath());
 
         renderLamps(graphics);
 
         if (config.highlightClosedDoors()) {
-            for (WallObject door : plugin.getDoors()) {
+            for (WallObject door : plugin.getStateManager().getDoors()) {
                 if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
@@ -81,19 +76,19 @@ public class DKLampsOverlay extends Overlay {
         }
         
         if (config.highlightInformativeStairs()) {
-            for (GameObject stair : plugin.getStairs()) {
+            for (GameObject stair : plugin.getStateManager().getStairs()) {
                 if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
-                if (plugin.getInformativeStairs().contains(stair.getWorldLocation())
+                if (plugin.getStateManager().getInformativeStairs().contains(stair.getWorldLocation())
                         && !pathPoints.contains(stair.getWorldLocation())) {
                     renderTileObject(stair, config.informativeStairColor(), graphics);
                 }
             }
         }
 
-        if (config.highlightWireMachine() && plugin.getWireMachine() != null) {
-            GameObject wireMachine = plugin.getWireMachine();
+        if (config.highlightWireMachine() && plugin.getStateManager().getWireMachine() != null) {
+            GameObject wireMachine = plugin.getStateManager().getWireMachine();
             if (wireMachine.getId() == DKLampsConstants.WIRE_MACHINE_ACTIVE) {
                 renderTileObject(wireMachine, config.wireMachineHighlightColor(), graphics);
             } else {
@@ -107,7 +102,7 @@ public class DKLampsOverlay extends Overlay {
     }
 
     private void renderLamps(Graphics2D graphics) {
-        for (GameObject lampObject : plugin.getSpawnedLamps().values()) {
+        for (GameObject lampObject : plugin.getStateManager().getSpawnedLamps().values()) {
             if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane()
                     && !config.highlightOtherPlanesLamps()) {
                 continue;
@@ -118,7 +113,7 @@ public class DKLampsOverlay extends Overlay {
                 continue;
             }
 
-            LampStatus status = plugin.getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
+            LampStatus status = plugin.getStateManager().getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
 
             Color color;
             if (status == LampStatus.BROKEN && config.highlightBrokenLamps()) {
@@ -140,7 +135,7 @@ public class DKLampsOverlay extends Overlay {
     }
 
     private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics) {
-        HighlightTypes style = config.highlightStyle();
+        HighlightType style = config.highlightStyle();
         switch (style) {
             case HIGHLIGHT_BORDER:
                 modelOutlineRenderer.drawOutline(tileObject, config.borderThickness(), color, config.borderFeather());
@@ -167,16 +162,19 @@ public class DKLampsOverlay extends Overlay {
             return;
         }
 
-        List<WorldPoint> path = plugin.getShortestPath();
+        List<WorldPoint> path = plugin.getNavigationManager().getShortestPath();
         if (path == null || path.isEmpty()) {
             return;
         }
 
-        // For bank and wire machine paths, ignore max distance limit
-        String targetType = plugin.getCurrentTargetType();
-        boolean isUtilityTarget = "Bank".equals(targetType) || "Wire Machine".equals(targetType);
-        
+        TargetType targetType = plugin.getNavigationManager().getCurrentTargetType();
+        boolean isUtilityTarget = targetType == TargetType.BANK || targetType == TargetType.WIRING_MACHINE;
+
         if (!isUtilityTarget && config.maxPathDistance() > 0 && path.size() > config.maxPathDistance()) {
+            return;
+        }
+
+        if (targetType == TargetType.BANK && DKLampsConstants.BANK_TILES.contains(client.getLocalPlayer().getWorldLocation())) {
             return;
         }
 
@@ -216,7 +214,7 @@ public class DKLampsOverlay extends Overlay {
             return;
         }
                 
-        for (GameObject stair : plugin.getStairs()) {
+        for (GameObject stair : plugin.getStateManager().getStairs()) {
             if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
             }
@@ -230,7 +228,7 @@ public class DKLampsOverlay extends Overlay {
     }
     
     private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints) {
-        for (WallObject door : plugin.getDoors()) {
+        for (WallObject door : plugin.getStateManager().getDoors()) {
             if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
             }
@@ -275,27 +273,27 @@ public class DKLampsOverlay extends Overlay {
     }
 
     private void renderWireTimer(Graphics2D graphics) {
-        if (plugin.getWireRespawnTime() == null || plugin.getWireMachine() == null) {
+        if (plugin.getStateManager().getWireRespawnTime() == null || plugin.getStateManager().getWireMachine() == null) {
             return;
         }
 
         Instant now = Instant.now();
-        if (now.isAfter(plugin.getWireRespawnTime())) {
+        if (now.isAfter(plugin.getStateManager().getWireRespawnTime())) {
             return;
         }
 
-        Duration duration = Duration.between(now, plugin.getWireRespawnTime());
+        Duration duration = Duration.between(now, plugin.getStateManager().getWireRespawnTime());
         double seconds = (double) Math.ceil(duration.toMillis() / 100.0) / 10.0;
-        double progress = (double) duration.toMillis() / ((WIRE_RESPAWN_TICKS) * 600.0);
+        double progress = (double) duration.toMillis() / ((DKLampsConstants.WIRE_RESPAWN_TICKS) * 600.0);
 
-        LocalPoint lp = plugin.getWireMachine().getLocalLocation();
+        LocalPoint lp = plugin.getStateManager().getWireMachine().getLocalLocation();
         Point point = net.runelite.api.Perspective.getCanvasTextLocation(client, graphics, lp, " ", 0);
 
         if (point == null) {
             return;
         }
 
-        if (config.timerType() == TimerTypes.PIE) {
+        if (config.timerType() == TimerType.PIE) {
             ProgressPieComponent pie = new ProgressPieComponent();
             pie.setPosition(point);
             pie.setBorderColor(config.wireMachineHighlightColor());
@@ -303,11 +301,11 @@ public class DKLampsOverlay extends Overlay {
             pie.setFill(config.wireMachineHighlightColor());
             pie.setProgress(progress);
             pie.render(graphics);
-        } else if (config.timerType() == TimerTypes.TICKS) {
+        } else if (config.timerType() == TimerType.TICKS) {
             long ticks = (long) Math.ceil(duration.toMillis() / 600.0);
             String text = String.valueOf(ticks);
             OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
-        } else if (config.timerType() == TimerTypes.SECONDS) {
+        } else if (config.timerType() == TimerType.SECONDS) {
             String text = String.format("%.1f", seconds);
             OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
         }

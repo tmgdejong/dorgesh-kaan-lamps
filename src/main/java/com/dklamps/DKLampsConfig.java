@@ -2,9 +2,9 @@ package com.dklamps;
 
 import java.awt.Color;
 
-import com.dklamps.enums.DisplayFloorTypes;
-import com.dklamps.enums.HighlightTypes;
-import com.dklamps.enums.TimerTypes;
+import com.dklamps.enums.DisplayFloorType;
+import com.dklamps.enums.HighlightType;
+import com.dklamps.enums.TimerType;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -168,8 +168,8 @@ public interface DKLampsConfig extends Config{
         section = sidePanelSection,
         position = 2
     )
-    default DisplayFloorTypes displayWorkingLampsInPanel() {
-        return DisplayFloorTypes.ALL_FLOORS;
+    default DisplayFloorType displayWorkingLampsInPanel() {
+        return DisplayFloorType.ALL_FLOORS;
     }
 
     @ConfigItem(
@@ -179,8 +179,8 @@ public interface DKLampsConfig extends Config{
         section = sidePanelSection,
         position = 3
     )
-    default DisplayFloorTypes displayPlayerInPanel() {
-        return DisplayFloorTypes.ALL_FLOORS;
+    default DisplayFloorType displayPlayerInPanel() {
+        return DisplayFloorType.ALL_FLOORS;
     }
 
     @Range(min = 1, max = 100)
@@ -287,8 +287,8 @@ public interface DKLampsConfig extends Config{
         section = hintsSection,
 		position = 2
     )
-    default TimerTypes timerType() {
-        return TimerTypes.PIE;
+    default TimerType timerType() {
+        return TimerType.PIE;
     }
 
 	@ConfigItem(
@@ -360,8 +360,8 @@ public interface DKLampsConfig extends Config{
         section = highlightStyleSection,
         position = 1
     )
-    default HighlightTypes highlightStyle() {
-        return HighlightTypes.HIGHLIGHT_CLICKBOX;
+    default HighlightType highlightStyle() {
+        return HighlightType.HIGHLIGHT_CLICKBOX;
     }
 
     @Range(min = 0, max = 4)

@@ -23,32 +23,28 @@ public class TeleportOverlay extends WidgetItemOverlay
         this.config = config;
         this.itemManager = itemManager;
         showOnInventory();
-        showOnBank();
     }
 
     @Override
     public void renderItemOverlay(Graphics2D graphics, int itemId, WidgetItem itemWidget)
     {
-        // Use the correct Item ID for your sphere here
         if (itemId != DKLampsConstants.TELEPORT_SPHERE_ID)
         {
             return;
         }
 
-        List<WorldPoint> path = plugin.getShortestPath();
+        List<WorldPoint> path = plugin.getNavigationManager().getShortestPath();
 
         // Only highlight if we have a path AND it's longer than the config allows
-        if (path != null && (path.size() > config.maxPathDistance() || plugin.getBrokenLamps().isEmpty()))
+        if (path != null && (path.size() > config.maxPathDistance() || plugin.getStateManager().getBrokenLamps().isEmpty()))
         {
             Rectangle bounds = itemWidget.getCanvasBounds();
-            java.awt.Stroke oldStroke = graphics.getStroke();
             Color oldColor = graphics.getColor();
 
-            graphics.setColor(config.pathColor());
-            graphics.setStroke(new java.awt.BasicStroke(3.0f));
-            graphics.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
+            Color base = config.pathColor();
+            graphics.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), 128));
+            graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
-            graphics.setStroke(oldStroke);
             graphics.setColor(oldColor);
         }
     }

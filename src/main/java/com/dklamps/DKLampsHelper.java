@@ -18,9 +18,12 @@ public class DKLampsHelper {
     private static final Map<Area, Set<Lamp>> LAMPS_BY_AREA;
     private static final Map<Integer, Set<Lamp>> LAMPS_BY_BIT_POSITION;
     private static final Map<Integer, Lamp> LAMPS_BY_OBJECT_ID;
+    private static final Map<WorldPoint, Lamp> LAMPS_BY_WORLD_POINT;
+
+    private static final Map<Area, Set<Integer>> BIT_POSITIONS_BY_AREA;
+    private static final Map<Area, Integer> MAX_BIT_BY_AREA;
 
     static {
-        // Pre-calculates a map of areas to the set of lamps within them
         ImmutableMap.Builder<Area, Set<Lamp>> areaBuilder = new ImmutableMap.Builder<>();
         for (Area area : Area.values()) {
             Set<Lamp> lampsInArea = Sets.immutableEnumSet(
@@ -31,7 +34,6 @@ public class DKLampsHelper {
         }
         LAMPS_BY_AREA = areaBuilder.build();
 
-        // Pre-calculates a map of varbit bit positions to the lamps they represent
         ImmutableMap.Builder<Integer, Set<Lamp>> bitBuilder = new ImmutableMap.Builder<>();
         for (int i = 0; i < 32; i++) {
             final int bit = i;
@@ -45,12 +47,38 @@ public class DKLampsHelper {
         }
         LAMPS_BY_BIT_POSITION = bitBuilder.build();
 
-        // Pre-calculates a map of unique object IDs to the lamp they represent
         ImmutableMap.Builder<Integer, Lamp> idBuilder = new ImmutableMap.Builder<>();
+        ImmutableMap.Builder<WorldPoint, Lamp> wpBuilder = new ImmutableMap.Builder<>();
         for (Lamp lamp : Lamp.values()) {
             idBuilder.put(lamp.getObjectId(), lamp);
+            wpBuilder.put(lamp.getWorldPoint(), lamp);
         }
         LAMPS_BY_OBJECT_ID = idBuilder.build();
+        LAMPS_BY_WORLD_POINT = wpBuilder.build();
+
+        ImmutableMap.Builder<Area, Set<Integer>> bitPosBuilder = new ImmutableMap.Builder<>();
+        ImmutableMap.Builder<Area, Integer> maxBitBuilder = new ImmutableMap.Builder<>();
+        for (Area area : Area.values()) {
+            Set<Lamp> lamps = LAMPS_BY_AREA.get(area);
+            if (lamps == null || lamps.isEmpty()) {
+                bitPosBuilder.put(area, Collections.emptySet());
+                maxBitBuilder.put(area, 0);
+                continue;
+            }
+            
+            Set<Integer> bits = lamps.stream()
+                    .map(Lamp::getBitPosition)
+                    .collect(Collectors.toSet());
+            bitPosBuilder.put(area, bits);
+
+            int maxBit = lamps.stream()
+                    .mapToInt(Lamp::getBitPosition)
+                    .max()
+                    .orElse(0);
+            maxBitBuilder.put(area, maxBit);
+        }
+        BIT_POSITIONS_BY_AREA = bitPosBuilder.build();
+        MAX_BIT_BY_AREA = maxBitBuilder.build();
     }
 
     public static Set<Lamp> getLampsByArea(Area area) {
@@ -82,12 +110,7 @@ public class DKLampsHelper {
     }
 
     public static Lamp getLamp(WorldPoint worldPoint) {
-        for (Lamp lamp : Lamp.values()) {
-            if (lamp.getWorldPoint().equals(worldPoint)) {
-                return lamp;
-            }
-        }
-        return null;
+        return LAMPS_BY_WORLD_POINT.get(worldPoint);
     }
 
     public static boolean isLamp(int objectId) {
@@ -101,28 +124,33 @@ public class DKLampsHelper {
         }
 
         Area oppositeArea = currentArea.getOpposite();
-
         Set<Lamp> lampsInCurrentArea = getLampsByArea(currentArea);
         Set<Lamp> lampsInOppositeArea = getLampsByArea(oppositeArea);
 
-        int maxBitPosition = lampsInCurrentArea.stream()
-                .mapToInt(Lamp::getBitPosition)
-                .max()
-                .orElse(0);
+        int maxBitPosition = MAX_BIT_BY_AREA.getOrDefault(currentArea, 0);
 
         for (int i = 0; i <= maxBitPosition; i++) {
             if ((varbitValue & (1 << i)) != 0) {
-                final int bit = i;
-                Lamp lamp = lampsInCurrentArea.stream()
-                        .filter(l -> l.getBitPosition() == bit)
-                        .findFirst()
-                        .orElse(lampsInOppositeArea.stream()
-                                .filter(l -> l.getBitPosition() == bit)
-                                .findFirst()
-                                .orElse(null));
+                Set<Lamp> lampsForBit = LAMPS_BY_BIT_POSITION.getOrDefault(i, Collections.emptySet());
+                Lamp lampToAdd = null;
+                for (Lamp lamp : lampsForBit) {
+                    if (lampsInCurrentArea.contains(lamp)) {
+                        lampToAdd = lamp;
+                        break;
+                    }
+                }
 
-                if (lamp != null) {
-                    brokenLamps.add(lamp);
+                if (lampToAdd == null) {
+                    for (Lamp lamp : lampsForBit) {
+                        if (lampsInOppositeArea.contains(lamp)) {
+                            lampToAdd = lamp;
+                            break;
+                        }
+                    }
+                }
+
+                if (lampToAdd != null) {
+                    brokenLamps.add(lampToAdd);
                 }
             }
         }
@@ -137,20 +165,13 @@ public class DKLampsHelper {
         }
 
         Set<Lamp> lampsInOppositeArea = getLampsByArea(oppositeArea);
-        Set<Lamp> lampsInCurrentArea = getLampsByArea(currentArea);
 
-        int maxBitPosition = lampsInCurrentArea.stream()
-                .mapToInt(Lamp::getBitPosition)
-                .max()
-                .orElse(0);
-
-        Set<Integer> currentAreaBitPositions = lampsInCurrentArea.stream()
-                .map(Lamp::getBitPosition)
-                .collect(Collectors.toSet());
+        int maxBitPosition = MAX_BIT_BY_AREA.getOrDefault(currentArea, 0);
+        Set<Integer> currentAreaBitPositions = BIT_POSITIONS_BY_AREA.getOrDefault(currentArea, Collections.emptySet());
 
         return lampsInOppositeArea.stream()
                 .filter(lamp -> lamp.getBitPosition() <= maxBitPosition
-                        && !currentAreaBitPositions.contains(lamp.getBitPosition()))
+                            && !currentAreaBitPositions.contains(lamp.getBitPosition()))
                 .collect(Collectors.toSet());
     }
 
@@ -211,5 +232,25 @@ public class DKLampsHelper {
                 }
             }
         }
+    }
+
+    public static int countUnknownLampsInArea(Map<Lamp, LampStatus> lampStatuses, Area area) {
+        if (area == null) {
+            return 0;
+        }
+        
+        int unknownCount = 0;
+        Set<Lamp> lampsInArea = getLampsByArea(area);
+        
+        for (Lamp lamp : lampsInArea) {
+            if (lampStatuses.getOrDefault(lamp, LampStatus.UNKNOWN) == LampStatus.UNKNOWN) {
+                unknownCount++;
+            }
+        }
+        return unknownCount;
+    }
+
+    public static boolean isInBankArea(WorldPoint playerLocation) {
+        return playerLocation.distanceTo(DKLampsConstants.BANK_LOCATION) <= 5;
     }
 }

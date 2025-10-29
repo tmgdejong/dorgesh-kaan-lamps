@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.JPanel;
 
-import com.dklamps.enums.DisplayFloorTypes;
+import com.dklamps.enums.DisplayFloorType;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
 
@@ -111,14 +111,14 @@ public class MapPanel extends JPanel {
             }
 
             for (Lamp lamp : lampsOnThisFloor) {
-                LampStatus status = plugin.getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
+                LampStatus status = plugin.getStateManager().getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
 
                 Color color;
                 if (status == LampStatus.BROKEN) {
                     color = plugin.getConfig().getBrokenLampColor();
                 } else if (status == LampStatus.WORKING &&
-                        ((plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorTypes.ALL_FLOORS)
-                                || (plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorTypes.CURRENT_FLOOR
+                        ((plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.ALL_FLOORS)
+                                || (plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.CURRENT_FLOOR
                                         && lamp.getWorldPoint().getPlane() == plane))) {
                     color = plugin.getConfig().getWorkingLampColor();
                 } else {
@@ -135,7 +135,7 @@ public class MapPanel extends JPanel {
             }
 
             if (plugin.getClient().getLocalPlayer() != null &&
-                    plugin.getConfig().displayPlayerInPanel() != DisplayFloorTypes.NONE) {
+                    plugin.getConfig().displayPlayerInPanel() != DisplayFloorType.NONE) {
                 WorldPoint playerLocation = plugin.getClient().getLocalPlayer().getWorldLocation();
                 drawPlayerDot(g2d, playerLocation);
             }
@@ -164,7 +164,7 @@ public class MapPanel extends JPanel {
         }
 
         private void drawPlayerDot(Graphics2D g2d, WorldPoint playerLocation) {
-            if (plugin.getConfig().displayPlayerInPanel() == DisplayFloorTypes.CURRENT_FLOOR &&
+            if (plugin.getConfig().displayPlayerInPanel() == DisplayFloorType.CURRENT_FLOOR &&
                     playerLocation.getPlane() != plane) {
                 return;
             }

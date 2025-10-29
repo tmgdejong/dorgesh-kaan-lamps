@@ -53,6 +53,7 @@ public final class DKLampsConstants {
     );
     
     // Bank location in Dorgesh-Kaan
+    public static final WorldPoint WIRE_MACHINE_LOCATION = new WorldPoint(2722, 5278, 0);
     public static final WorldPoint BANK_LOCATION = new WorldPoint(2702, 5349, 0);
     public static final Set<WorldPoint> BANK_TILES = ImmutableSet.of(
             new WorldPoint(2701, 5347, 0),

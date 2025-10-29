@@ -1,6 +1,6 @@
 package com.dklamps.enums;
 
-public enum TimerTypes {
+public enum TimerType {
     PIE,
     TICKS,
     SECONDS

@@ -9,6 +9,7 @@ import net.runelite.api.Client;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
+import net.runelite.client.ui.overlay.components.LineComponent.LineComponentBuilder;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 
 public class StatsOverlay extends OverlayPanel
@@ -54,21 +55,27 @@ public class StatsOverlay extends OverlayPanel
             
         panelComponent.getChildren().add(LineComponent.builder()
             .left("Target:")
-            .right(plugin.getCurrentTargetType())
+            .right(plugin.getNavigationManager().getCurrentTargetType().getDisplayName())
             .rightColor(config.pathColor())
             .build());
 
         if (config.showClosestDistance())
         {
-            String distText = (plugin.getClosestDistance() == Integer.MAX_VALUE) ? "-" : String.valueOf(plugin.getClosestDistance());
-            panelComponent.getChildren().add(LineComponent.builder()
-                .left("Distance:")
-                .right(distText + " tiles")
-                .build());
+            int closestDist = plugin.getNavigationManager().getClosestDistance();
+            String distText = (closestDist == Integer.MAX_VALUE) ? "-" : String.valueOf(closestDist);
+            LineComponentBuilder line = LineComponent.builder()
+            .left("Distance:")
+            .right(distText + " tiles");
+
+            if (closestDist != Integer.MAX_VALUE && closestDist > config.maxPathDistance()) {
+                boolean blinkOn = (System.currentTimeMillis() / 600) % 2 == 0;
+                line.rightColor(blinkOn ? Color.RED : config.pathColor());
+            }
+
+            panelComponent.getChildren().add(line.build());
         }
 
-        // Follow woodcutting plugin pattern for session stats
-        int lampsFixed = plugin.getLampsFixed();
+        int lampsFixed = plugin.getStatsTracker().getLampsFixed();
         if (lampsFixed > 0 && config.showSessionFixed())
         {
             panelComponent.getChildren().add(LineComponent.builder()
@@ -76,7 +83,7 @@ public class StatsOverlay extends OverlayPanel
                 .right(Integer.toString(lampsFixed))
                 .build());
 
-            int lampsPerHr = plugin.getLampsPerHr();
+            int lampsPerHr = plugin.getStatsTracker().getLampsPerHr();
             if (lampsPerHr > 0 && config.showLampsPerHour())
             {
                 panelComponent.getChildren().add(LineComponent.builder()
@@ -90,7 +97,7 @@ public class StatsOverlay extends OverlayPanel
         {
             panelComponent.getChildren().add(LineComponent.builder()
                 .left("Total Fixed:")
-                .right(String.valueOf(plugin.getTotalLampsFixed()))
+                .right(String.valueOf(plugin.getStatsTracker().getTotalLampsFixed()))
                 .build());
         }
 
