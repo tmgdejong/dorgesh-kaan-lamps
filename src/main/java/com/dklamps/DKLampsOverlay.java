@@ -311,13 +311,16 @@ public class DKLampsOverlay extends Overlay {
             pie.setBorderColor(config.wireMachineHighlightColor());
             pie.setDiameter(20);
             pie.setFill(config.wireMachineHighlightColor());
+            // Use the smooth progress value
             pie.setProgress(progress);
             pie.render(graphics);
         } else if (config.timerType() == TimerType.TICKS) {
+            // Ticks should still likely show the discrete value
             String text = String.valueOf(ticksRemaining);
             OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
         } else if (config.timerType() == TimerType.SECONDS) {
-            double seconds = ticksRemaining * 0.6;
+            // Calculate seconds based on the smooth value
+            double seconds = smoothTicksRemaining * 0.6;
             String text = String.format("%.1f", seconds);
             OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
         }

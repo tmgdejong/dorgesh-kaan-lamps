@@ -220,32 +220,39 @@ public class DKLampsStateManager {
 
     private void detectInformativeStairs() {
         informativeStairs.clear();
+
+        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        if (playerLocation == null || stairs.isEmpty()) {
+            return;
+        }
+
+        Map<Area, WorldPoint> closestStairForArea = new EnumMap<>(Area.class);
+        Map<Area, Integer> minDistanceForArea = new EnumMap<>(Area.class);
+
         for (GameObject stair : stairs) {
             WorldPoint stairLocation = stair.getWorldLocation();
+            int distanceToPlayer = playerLocation.distanceTo(stairLocation);
+
             for (int plane = 0; plane <= 2; plane++) {
                 if (plane == stairLocation.getPlane()) {
                     continue;
                 }
+
                 WorldPoint targetPlane = new WorldPoint(stairLocation.getX(), stairLocation.getY(), plane);
                 Area targetArea = DKLampsHelper.getArea(targetPlane);
 
-                if (targetArea != null) {
-                    Set<Lamp> lampsInArea = DKLampsHelper.getLampsByArea(targetArea);
-                    boolean hasUnknownLamps = false;
-                    for (Lamp lamp : lampsInArea) {
-                        LampStatus status = lampStatuses.getOrDefault(lamp, LampStatus.UNKNOWN);
-                        if (status == LampStatus.UNKNOWN) {
-                            hasUnknownLamps = true;
-                            break;
-                        }
-                    }
-                    if (hasUnknownLamps) {
-                        informativeStairs.add(stairLocation);
-                        break;
+                if (targetArea != null && DKLampsHelper.areaHasUnknownLamps(targetArea, lampStatuses)) {
+                    int currentMinDistance = minDistanceForArea.getOrDefault(targetArea, Integer.MAX_VALUE);
+
+                    if (distanceToPlayer < currentMinDistance) {
+                        minDistanceForArea.put(targetArea, distanceToPlayer);
+                        closestStairForArea.put(targetArea, stairLocation);
                     }
                 }
             }
         }
+
+        informativeStairs.addAll(closestStairForArea.values());
     }
 
     private void detectRuneLiteHintArrow(Map<Lamp, LampStatus> newStatuses) {

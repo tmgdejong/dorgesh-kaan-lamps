@@ -317,7 +317,7 @@ public interface DKLampsConfig extends Config{
         position = 120
 	)
 	default Color informativeStairColor() {
-		return Color.MAGENTA;
+		return new Color(255,102,183);
 	}
 
     @ConfigSection(

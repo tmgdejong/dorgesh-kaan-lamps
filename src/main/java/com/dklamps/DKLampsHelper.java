@@ -230,6 +230,21 @@ public class DKLampsHelper {
         }
     }
 
+    public static boolean areaHasUnknownLamps(Area area, Map<Lamp, LampStatus> lampStatuses) {
+        if (area == null) {
+            return false;
+        }
+
+        Set<Lamp> lampsInArea = getLampsByArea(area);
+        for (Lamp lamp : lampsInArea) {
+            LampStatus status = lampStatuses.getOrDefault(lamp, LampStatus.UNKNOWN);
+            if (status == LampStatus.UNKNOWN) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static int countUnknownLampsInArea(Map<Lamp, LampStatus> lampStatuses, Area area) {
         if (area == null) {
             return 0;
