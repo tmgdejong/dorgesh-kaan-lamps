@@ -154,13 +154,6 @@ public class DKLampsHelper {
                 .collect(Collectors.toSet());
     }
 
-    public static void resetLampStatuses(Map<Lamp, LampStatus> lampStatuses) {
-        for (Lamp lamp : Lamp.values()) {
-            lampStatuses.put(lamp, LampStatus.UNKNOWN);
-        }
-        return lampStatuses;
-    }
-
     public static Map<Lamp, LampStatus> updateLampStatuses(
             Map<Lamp, LampStatus> lampStatuses,
             Set<Lamp> brokenLamps,
@@ -182,15 +175,19 @@ public class DKLampsHelper {
             }
             
             if (isLampsFixed) {
-                for (Map.Entry<Lamp, LampStatus> entry : updatedStatuses.entrySet()) {
-                    Area lampArea = entry.getKey().getArea();
-                    if (lampArea != currentArea && lampArea != oppositeArea && entry.getValue() == LampStatus.WORKING) {
-                        updatedStatuses.put(entry.getKey(), LampStatus.UNKNOWN);
+                for (Lamp lamp : Lamp.values()) {
+                    Area lampArea = lamp.getArea();
+                    if (lampArea != currentArea && lampArea != oppositeArea) {
+                        LampStatus status = updatedStatuses.get(lamp);
+                        if (status == LampStatus.WORKING) {
+                            updatedStatuses.put(lamp, LampStatus.UNKNOWN);
+                        }
                     }
                 }
             }
         }
-
+        autoFixAllLampsIfNeeded(updatedStatuses);
+        
         return updatedStatuses;
     }
 
@@ -214,6 +211,5 @@ public class DKLampsHelper {
                 }
             }
         }
-        return lampStatuses;
     }
 }

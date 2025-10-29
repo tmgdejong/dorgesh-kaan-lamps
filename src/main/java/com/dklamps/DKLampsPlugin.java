@@ -347,11 +347,14 @@ public class DKLampsPlugin extends Plugin {
 
         // Only update lamp statuses when needed or on heavy operation ticks
         if (needsLampStatusUpdate || isHeavyOperationTick) {
-            lampStatuses = DKLampsHelper.updateLampStatuses(
+            Map<Lamp,LampStatus> newStatuses = DKLampsHelper.updateLampStatuses(
                 lampStatuses, 
                 brokenLamps, 
                 needsLampStatusUpdate, 
                 currentArea);
+
+            lampStatuses.clear();
+            lampStatuses.putAll(newStatuses);
             needsLampStatusUpdate = false;
         }
 
@@ -375,7 +378,14 @@ public class DKLampsPlugin extends Plugin {
         previouslyBrokenLamps.addAll(brokenLamps);
         lastArea = currentArea;
     }
-
+  
+    public static void resetLampStatuses(Map<Lamp, LampStatus> lampStatuses) {
+        for (Lamp lamp : Lamp.values()) {
+            lampStatuses.put(lamp, LampStatus.UNKNOWN);
+        }
+        return lampStatuses;
+    }
+    
     private void logClosestLamp() {
         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
         if (playerLocation == null || pathfinder == null || pathfindingExecutor == null) {
