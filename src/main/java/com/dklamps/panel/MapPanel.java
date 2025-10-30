@@ -1,4 +1,4 @@
-package com.dklamps;
+package com.dklamps.panel;
 
 import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
@@ -7,8 +7,6 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
@@ -16,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.JPanel;
 
+import com.dklamps.DKLampsPlugin;
 import com.dklamps.enums.DisplayFloorType;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
@@ -58,25 +57,15 @@ public class MapPanel extends JPanel {
     }
 
     private class MapDisplay extends JPanel {
-        MapDisplay() {
-            addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    // Click functionality removed since we no longer use hint arrows
-                    // Could be replaced with other functionality like highlighting in the future
-                }
-            });
-        }
+        MapDisplay() {}
 
         @Override
         public Dimension getPreferredSize() {
             if (mapImage == null) {
                 return new Dimension(0, 0);
             }
-            // Calculate width to maintain aspect ratio based on available height
             int panelHeight = getParent().getHeight();
             if (panelHeight <= 0) {
-                // Estimate a reasonable height if not yet rendered
                 panelHeight = 200;
             }
             double scale = (double) panelHeight / mapImage.getHeight();

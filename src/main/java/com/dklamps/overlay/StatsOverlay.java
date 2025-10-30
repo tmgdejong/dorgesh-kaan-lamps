@@ -1,5 +1,8 @@
-package com.dklamps;
+package com.dklamps.overlay;
 
+import com.dklamps.DKLampsConfig;
+import com.dklamps.DKLampsHelper;
+import com.dklamps.DKLampsPlugin;
 import com.dklamps.enums.Area;
 import com.dklamps.enums.TargetType;
 

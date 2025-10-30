@@ -1,4 +1,4 @@
-package com.dklamps;
+package com.dklamps.overlay;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 
+import com.dklamps.DKLampsConfig;
+import com.dklamps.DKLampsConstants;
+import com.dklamps.DKLampsHelper;
+import com.dklamps.DKLampsPlugin;
 import com.dklamps.enums.HighlightType;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;

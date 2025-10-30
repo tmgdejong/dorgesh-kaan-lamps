@@ -1,6 +1,10 @@
 package com.dklamps;
 
 import com.dklamps.enums.InventoryState;
+import com.dklamps.overlay.DKLampsOverlay;
+import com.dklamps.overlay.StatsOverlay;
+import com.dklamps.overlay.TeleportOverlay;
+import com.dklamps.panel.DKLampsPanel;
 import com.dklamps.pathfinder.Pathfinder;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;

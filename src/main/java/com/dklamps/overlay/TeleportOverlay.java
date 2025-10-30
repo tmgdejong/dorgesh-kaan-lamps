@@ -1,4 +1,4 @@
-package com.dklamps;
+package com.dklamps.overlay;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -6,6 +6,9 @@ import java.awt.Rectangle;
 import java.util.List;
 import javax.inject.Inject;
 
+import com.dklamps.DKLampsConfig;
+import com.dklamps.DKLampsConstants;
+import com.dklamps.DKLampsPlugin;
 import com.dklamps.enums.TargetType;
 
 import net.runelite.api.coords.WorldPoint;

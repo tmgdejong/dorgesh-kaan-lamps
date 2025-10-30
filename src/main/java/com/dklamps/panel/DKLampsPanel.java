@@ -1,7 +1,10 @@
-package com.dklamps;
+package com.dklamps.panel;
 
 import java.awt.GridLayout;
 import javax.swing.border.EmptyBorder;
+
+import com.dklamps.DKLampsPlugin;
+
 import net.runelite.client.ui.PluginPanel;
 
 public class DKLampsPanel extends PluginPanel {
@@ -9,7 +12,7 @@ public class DKLampsPanel extends PluginPanel {
     private final MapPanel floor1;
     private final MapPanel floor2;
 
-    DKLampsPanel(DKLampsPlugin plugin) {
+    public DKLampsPanel(DKLampsPlugin plugin) {
         super(false);
         setBorder(new EmptyBorder(5, 10, 5, 10));
         setLayout(new GridLayout(0, 1, 0, 5));
