@@ -10,7 +10,12 @@ public final class DKLampsConstants {
 
     public static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
     public static final int WIRE_RESPAWN_TICKS = 8;
+    public static final int INVENTORY_ID = 93;
 
+    // Icon image path
+    public static final String ICON_IMAGE_PATH = "/light_orb_32x32.png";
+
+    // Chat messages and patterns
     public static final String NEARBY_LAMP_CHAT_MESSAGE = "There is another broken lamp nearby";
     public static final String TOTAL_LAMPS_FIXED_CHAT_MESSAGE = "You replace the orb. Total lights fixed: ";
     public static final Pattern NEARBY_LAMP_PATTERN = Pattern.compile("There is another broken lamp nearby, (\\w+(?:\\s\\w+)?) of here (\\w+(?:\\s\\w+)*)\\.");
@@ -22,6 +27,9 @@ public final class DKLampsConstants {
     public static final int DK_EAST_VALUE = 2751; // X
     public static final int DK_NORTH_VALUE = 5375; // Y
     public static final int DK_SOUTH_VALUE = 5248; // Y
+
+    public static final WorldPoint MAP_NORTH_WEST_CORNER = new WorldPoint(2688, 5375, 0);
+    public static final WorldPoint MAP_SOUTH_EAST_CORNER = new WorldPoint(2751, 5248, 0);
 
     // Object IDs
     public static final int TELEPORT_SPHERE_ID = 10972;

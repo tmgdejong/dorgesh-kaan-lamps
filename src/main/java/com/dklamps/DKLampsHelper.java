@@ -3,11 +3,14 @@ package com.dklamps;
 import com.dklamps.enums.Area;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
+import com.dklamps.enums.Transport;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,6 +25,9 @@ public class DKLampsHelper {
 
     private static final Map<Area, Set<Integer>> BIT_POSITIONS_BY_AREA;
     private static final Map<Area, Integer> MAX_BIT_BY_AREA;
+    
+    // Pre-computed stair destination mappings for efficiency
+    private static final Map<WorldPoint, Set<WorldPoint>> STAIR_DESTINATIONS;
 
     static {
         ImmutableMap.Builder<Area, Set<Lamp>> areaBuilder = new ImmutableMap.Builder<>();
@@ -79,6 +85,9 @@ public class DKLampsHelper {
         }
         BIT_POSITIONS_BY_AREA = bitPosBuilder.build();
         MAX_BIT_BY_AREA = maxBitBuilder.build();
+        
+        // Pre-compute stair destinations for efficiency
+        STAIR_DESTINATIONS = computeStairDestinations();
     }
 
     public static Set<Lamp> getLampsByArea(Area area) {
@@ -263,5 +272,89 @@ public class DKLampsHelper {
 
     public static boolean isInBankArea(WorldPoint playerLocation) {
         return playerLocation.distanceTo(DKLampsConstants.BANK_LOCATION) <= 5;
+    }
+    
+    private static Map<WorldPoint, Set<WorldPoint>> computeStairDestinations() {
+        Map<WorldPoint, Set<WorldPoint>> stairDestinations = new HashMap<>();
+        
+        for (Transport transport : Transport.values()) {
+            WorldPoint origin = transport.getOrigin();
+            WorldPoint destination = transport.getDestination();
+            
+            Set<WorldPoint> potentialStairLocations = new HashSet<>();
+            
+            int minX = Math.min(origin.getX(), destination.getX());
+            int maxX = Math.max(origin.getX(), destination.getX());
+            int minY = Math.min(origin.getY(), destination.getY());
+            int maxY = Math.max(origin.getY(), destination.getY());
+            
+            // Check all points in the bounding box and adjacent areas
+            for (int x = minX - 1; x <= maxX + 1; x++) {
+                for (int y = minY - 1; y <= maxY + 1; y++) {
+                    // Check both origin and destination planes
+                    potentialStairLocations.add(new WorldPoint(x, y, origin.getPlane()));
+                    if (destination.getPlane() != origin.getPlane()) {
+                        potentialStairLocations.add(new WorldPoint(x, y, destination.getPlane()));
+                    }
+                }
+            }
+            
+            for (WorldPoint stairLocation : potentialStairLocations) {
+                if (isLocationBetweenTransportPoints(stairLocation, transport)) {
+                    stairDestinations.computeIfAbsent(stairLocation, k -> new HashSet<>());
+                    
+                    // Determine which destination this stair leads to
+                    if (stairLocation.getPlane() == origin.getPlane()) {
+                        stairDestinations.get(stairLocation).add(destination);
+                    } else if (stairLocation.getPlane() == destination.getPlane()) {
+                        stairDestinations.get(stairLocation).add(origin);
+                    }
+                }
+            }
+        }
+        
+        return stairDestinations;
+    }
+    
+    private static boolean isLocationBetweenTransportPoints(WorldPoint objectLocation, Transport transport) {
+        WorldPoint origin = transport.getOrigin();
+        WorldPoint destination = transport.getDestination();
+        
+        if (objectLocation.getPlane() != origin.getPlane() && objectLocation.getPlane() != destination.getPlane()) {
+            return false;
+        }
+        
+        int objX = objectLocation.getX();
+        int objY = objectLocation.getY();
+        
+        int minX = Math.min(origin.getX(), destination.getX());
+        int maxX = Math.max(origin.getX(), destination.getX());
+        int minY = Math.min(origin.getY(), destination.getY());
+        int maxY = Math.max(origin.getY(), destination.getY());
+        
+        boolean xBetween = objX >= minX && objX <= maxX;
+        boolean yBetween = objY >= minY && objY <= maxY;
+        
+        if (xBetween && yBetween) {
+            return true;
+        }
+        
+        boolean nearOrigin = Math.abs(objX - origin.getX()) <= 1 && Math.abs(objY - origin.getY()) <= 1;
+        boolean nearDestination = Math.abs(objX - destination.getX()) <= 1 && Math.abs(objY - destination.getY()) <= 1;
+        
+        return nearOrigin && nearDestination;
+    }
+    
+    public static Set<WorldPoint> getStairDestinations(WorldPoint stairLocation) {
+        return STAIR_DESTINATIONS.getOrDefault(stairLocation, Collections.emptySet());
+    }
+    
+    public static boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports) {
+        for (Transport transport : activeTransports) {
+            if (isLocationBetweenTransportPoints(objectLocation, transport)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

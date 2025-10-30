@@ -1,5 +1,6 @@
 package com.dklamps.overlay;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
@@ -19,6 +20,7 @@ import com.dklamps.DKLampsPlugin;
 import com.dklamps.enums.HighlightType;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
+import com.dklamps.enums.PathDrawStyle;
 import com.dklamps.enums.TargetType;
 import com.dklamps.enums.TimerType;
 import com.dklamps.enums.Transport;
@@ -74,11 +76,11 @@ public class DKLampsOverlay extends Overlay {
                 }
 
                 if (!pathPoints.contains(door.getWorldLocation())) {
-                    renderTileObject(door, config.doorHighlightColor(), graphics);
+                    renderTileObject(door, config.doorHighlightColor(), graphics, config.objectsHighlightStyle());
                 }
             }
         }
-        
+
         if (config.highlightInformativeStairs()) {
             for (GameObject stair : plugin.getStateManager().getStairs()) {
                 if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
@@ -86,7 +88,7 @@ public class DKLampsOverlay extends Overlay {
                 }
                 if (plugin.getStateManager().getInformativeStairs().contains(stair.getWorldLocation())
                         && !pathPoints.contains(stair.getWorldLocation())) {
-                    renderTileObject(stair, config.informativeStairColor(), graphics);
+                    renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
                 }
             }
         }
@@ -94,7 +96,8 @@ public class DKLampsOverlay extends Overlay {
         if (config.highlightWireMachine() && plugin.getStateManager().getWireMachine() != null) {
             GameObject wireMachine = plugin.getStateManager().getWireMachine();
             if (wireMachine.getId() == DKLampsConstants.WIRE_MACHINE_ACTIVE) {
-                renderTileObject(wireMachine, config.wireMachineHighlightColor(), graphics);
+                renderTileObject(wireMachine, config.wireMachineHighlightColor(), graphics,
+                        config.objectsHighlightStyle());
             } else {
                 renderWireTimer(graphics);
             }
@@ -134,12 +137,11 @@ public class DKLampsOverlay extends Overlay {
                 color = color.darker();
             }
 
-            renderTileObject(lampObject, color, graphics);
+            renderTileObject(lampObject, color, graphics, config.lampsHighlightStyle());
         }
     }
 
-    private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics) {
-        HighlightType style = config.highlightStyle();
+    private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics, HighlightType style) {
         switch (style) {
             case HIGHLIGHT_BORDER:
                 modelOutlineRenderer.drawOutline(tileObject, config.borderThickness(), color, config.borderFeather());
@@ -178,25 +180,58 @@ public class DKLampsOverlay extends Overlay {
             return;
         }
 
-        if (targetType == TargetType.BANK && DKLampsConstants.BANK_TILES.contains(client.getLocalPlayer().getWorldLocation())) {
+        if (targetType == TargetType.BANK
+                && DKLampsConstants.BANK_TILES.contains(client.getLocalPlayer().getWorldLocation())) {
             return;
         }
 
         Set<Transport> activeTransports = new HashSet<>();
+        PathDrawStyle style = config.pathDrawStyle();
+        Point prevScreenPoint = null;
 
         for (WorldPoint point : path) {
             if (point.getPlane() != client.getTopLevelWorldView().getPlane()) {
+                prevScreenPoint = null;
                 continue;
             }
 
             LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), point);
             if (localPoint == null) {
+                prevScreenPoint = null;
                 continue;
             }
 
-            Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
-            if (poly != null) {
-                OverlayUtil.renderPolygon(graphics, poly, isUtilityTarget ? config.utilityPathColor() : config.pathColor());
+            switch (style) {
+                case TILES:
+                    Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
+                    if (poly != null) {
+                        OverlayUtil.renderPolygon(graphics, poly,
+                                isUtilityTarget ? config.utilityPathColor() : config.pathColor());
+                    }
+                    break;
+
+                case TILE_BORDERS:
+                    Polygon borderPoly = Perspective.getCanvasTilePoly(client, localPoint);
+                    if (borderPoly != null) {
+                        graphics.setColor(isUtilityTarget ? config.utilityPathColor() : config.pathColor());
+                        graphics.draw(borderPoly);
+                    }
+                    break;
+
+                case CENTER_LINE:
+                    Point screenPoint = Perspective.localToCanvas(client, localPoint,
+                            client.getTopLevelWorldView().getPlane());
+                    if (screenPoint == null) {
+                        continue;
+                    }
+                    if (prevScreenPoint != null) {
+                        graphics.setColor(isUtilityTarget ? config.utilityPathColor() : config.pathColor());
+                        graphics.setStroke(new BasicStroke(2));
+                        graphics.drawLine(prevScreenPoint.getX(), prevScreenPoint.getY(), screenPoint.getX(),
+                                screenPoint.getY());
+                    }
+                    prevScreenPoint = screenPoint;
+                    break;
             }
 
             List<Transport> transports = plugin.getPathfinder().getTransportsAt(point);
@@ -212,73 +247,46 @@ public class DKLampsOverlay extends Overlay {
 
     }
 
-    private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports, boolean isUtilityTarget) {
+    private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports,
+            boolean isUtilityTarget) {
 
         if (activeTransports.isEmpty()) {
             return;
         }
-                
+
         for (GameObject stair : plugin.getStateManager().getStairs()) {
             if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
             }
-            
+
             WorldPoint stairLocation = stair.getWorldLocation();
-            if (isStairBetweenTransportPoints(stairLocation, activeTransports)) {
-                renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics);
+            if (DKLampsHelper.isStairBetweenTransportPoints(stairLocation, activeTransports)) {
+                renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
+                        config.objectsHighlightStyle());
             }
         }
-        
+
     }
-    
+
     private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints, boolean isUtilityTarget) {
         for (WallObject door : plugin.getStateManager().getDoors()) {
             if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
             }
-            
+
             WorldPoint doorLocation = door.getWorldLocation();
             if (pathPoints.contains(doorLocation)) {
-                renderTileObject(door, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics);
+                renderTileObject(door, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
+                        config.objectsHighlightStyle());
             }
         }
     }
-    
-    private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports) {
-        for (Transport transport : activeTransports) {
-            WorldPoint origin = transport.getOrigin();
-            WorldPoint destination = transport.getDestination();
-            
-            if (objectLocation.getPlane() != origin.getPlane() && objectLocation.getPlane() != destination.getPlane()) {
-                continue;
-            }
-            
-            int objX = objectLocation.getX();
-            int objY = objectLocation.getY();
-            
-            int minX = Math.min(origin.getX(), destination.getX());
-            int maxX = Math.max(origin.getX(), destination.getX());
-            int minY = Math.min(origin.getY(), destination.getY());
-            int maxY = Math.max(origin.getY(), destination.getY());
-            
-            boolean xBetween = objX >= minX && objX <= maxX;
-            boolean yBetween = objY >= minY && objY <= maxY;
 
-            if (xBetween && yBetween) {
-                return true;
-            }
 
-            if ((Math.abs(objX - origin.getX()) <= 1 && Math.abs(objY - origin.getY()) <= 1) &&
-                (Math.abs(objX - destination.getX()) <= 1 && Math.abs(objY - destination.getY()) <= 1)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private void renderWireTimer(Graphics2D graphics) {
         int respawnTick = plugin.getStateManager().getWireRespawnTick();
-        
+
         if (respawnTick == -1 || plugin.getStateManager().getWireMachine() == null) {
             return;
         }
@@ -294,7 +302,7 @@ public class DKLampsOverlay extends Overlay {
 
         double tickFractionPassed = millisSinceLastTick / 600.0;
 
-        double smoothTicksRemaining = Math.max(0.0, (double)ticksRemaining - tickFractionPassed);
+        double smoothTicksRemaining = Math.max(0.0, (double) ticksRemaining - tickFractionPassed);
 
         if (smoothTicksRemaining <= 0) {
             return;

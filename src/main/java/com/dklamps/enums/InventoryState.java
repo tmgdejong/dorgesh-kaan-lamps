@@ -12,7 +12,7 @@ public enum InventoryState {
     HAS_WORKING_BULBS;
 
     public InventoryState getInventoryState(Client client) {
-        ItemContainer inventory = client.getItemContainer(93);
+        ItemContainer inventory = client.getItemContainer(DKLampsConstants.INVENTORY_ID);
         if (inventory == null) {
             return InventoryState.NO_LIGHT_BULBS;
         }

@@ -20,14 +20,11 @@ public class TeleportOverlay extends WidgetItemOverlay
 {
     private final DKLampsPlugin plugin;
     private final DKLampsConfig config;
-    private final ItemManager itemManager;
-
     @Inject
     private TeleportOverlay(DKLampsPlugin plugin, DKLampsConfig config, ItemManager itemManager)
     {
         this.plugin = plugin;
         this.config = config;
-        this.itemManager = itemManager;
         showOnInventory();
     }
 

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.JPanel;
 
+import com.dklamps.DKLampsConstants;
 import com.dklamps.DKLampsPlugin;
 import com.dklamps.enums.DisplayFloorType;
 import com.dklamps.enums.Lamp;
@@ -26,8 +27,6 @@ import net.runelite.client.util.ImageUtil;
 
 @Slf4j
 public class MapPanel extends JPanel {
-    private static final WorldPoint MAP_NORTH_WEST_CORNER = new WorldPoint(2688, 5375, 0);
-    private static final WorldPoint MAP_SOUTH_EAST_CORNER = new WorldPoint(2751, 5248, 0);
 
     private final DKLampsPlugin plugin;
     private final int plane;
@@ -133,17 +132,17 @@ public class MapPanel extends JPanel {
         private Ellipse2D.Double getLampCircle(Lamp lamp) {
             WorldPoint point = lamp.getWorldPoint();
 
-            if (point.getX() < MAP_NORTH_WEST_CORNER.getX() || point.getX() > MAP_SOUTH_EAST_CORNER.getX() ||
-                    point.getY() > MAP_NORTH_WEST_CORNER.getY() || point.getY() < MAP_SOUTH_EAST_CORNER.getY()) {
+            if (point.getX() < DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() || point.getX() > DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() ||
+                    point.getY() > DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() || point.getY() < DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) {
                 log.warn("Lamp {} at {} is outside the defined map bounds!", lamp.name(), point);
                 return null;
             }
 
-            double mapWidthInTiles = (MAP_SOUTH_EAST_CORNER.getX() - MAP_NORTH_WEST_CORNER.getX()) + 1;
-            double mapHeightInTiles = (MAP_NORTH_WEST_CORNER.getY() - MAP_SOUTH_EAST_CORNER.getY()) + 1;
+            double mapWidthInTiles = (DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()) + 1;
+            double mapHeightInTiles = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) + 1;
 
-            double lampRelativeX = (point.getX() - MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
-            double lampRelativeY = (MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
+            double lampRelativeX = (point.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
+            double lampRelativeY = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
 
             int panelX = (int) (lampRelativeX * getWidth());
             int panelY = (int) (lampRelativeY * getHeight());
@@ -176,16 +175,16 @@ public class MapPanel extends JPanel {
         }
 
         private Ellipse2D.Double getPointCircle(WorldPoint point) {
-            if (point.getX() < MAP_NORTH_WEST_CORNER.getX() || point.getX() > MAP_SOUTH_EAST_CORNER.getX() ||
-                    point.getY() > MAP_NORTH_WEST_CORNER.getY() || point.getY() < MAP_SOUTH_EAST_CORNER.getY()) {
+            if (point.getX() < DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() || point.getX() > DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() ||
+                    point.getY() > DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() || point.getY() < DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) {
                 return null;
             }
 
-            double mapWidthInTiles = (MAP_SOUTH_EAST_CORNER.getX() - MAP_NORTH_WEST_CORNER.getX()) + 1;
-            double mapHeightInTiles = (MAP_NORTH_WEST_CORNER.getY() - MAP_SOUTH_EAST_CORNER.getY()) + 1;
+            double mapWidthInTiles = (DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()) + 1;
+            double mapHeightInTiles = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) + 1;
 
-            double relativeX = (point.getX() - MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
-            double relativeY = (MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
+            double relativeX = (point.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
+            double relativeY = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
 
             int panelX = (int) (relativeX * getWidth());
             int panelY = (int) (relativeY * getHeight());

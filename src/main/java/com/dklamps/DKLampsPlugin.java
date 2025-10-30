@@ -100,10 +100,10 @@ public class DKLampsPlugin extends Plugin {
             return;
         }
 
-        navigationManager = new DKLampsNavigationManager(client, pathfinder, pathfindingExecutor);
+        navigationManager = new DKLampsNavigationManager(client, config, pathfinder, pathfindingExecutor);
 
         panel = new DKLampsPanel(this);
-        final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/light_orb_32x32.png");
+        final BufferedImage icon = ImageUtil.loadImageResource(getClass(), DKLampsConstants.ICON_IMAGE_PATH);
         navButton = NavigationButton.builder()
                 .tooltip("Dorgesh-Kaan Lamps")
                 .icon(icon)
@@ -174,6 +174,15 @@ public class DKLampsPlugin extends Plugin {
         }
 
         stateManager.onGameTick();
+
+        if (stateManager.getCurrentArea() == null) { 
+            // Add a simple clear method to the nav manager
+            if (navigationManager != null) {
+                navigationManager.clearPathAndTarget();
+            }
+            client.clearHintArrow();
+            return;
+        }
 
         InventoryState inventoryState = InventoryState.NO_LIGHT_BULBS.getInventoryState(client);
         WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();

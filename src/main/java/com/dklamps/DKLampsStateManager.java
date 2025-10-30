@@ -43,6 +43,8 @@ public class DKLampsStateManager {
     private int wireRespawnTick = -1;
 
     private Set<Lamp> previouslyBrokenLamps = new HashSet<>();
+    @Getter
+    private Area currentArea = null;
     private Area lastArea = null;
     private String lastHintDirection = null;
     private String lastHintFloor = null;
@@ -83,7 +85,7 @@ public class DKLampsStateManager {
         gameTickCounter++;
         boolean isHeavyOperationTick = (gameTickCounter % HEAVY_OPERATIONS_INTERVAL) == 0;
 
-        Area currentArea = DKLampsHelper.getArea(client.getLocalPlayer().getWorldLocation());
+        currentArea = DKLampsHelper.getArea(client.getLocalPlayer().getWorldLocation());
         if (currentArea == null) {
             lastArea = null;
             return;
@@ -180,11 +182,12 @@ public class DKLampsStateManager {
             spawnedLamps.clear();
             doors.clear();
             stairs.clear();
+            informativeStairs.clear();
             wireMachine = null;
             wireRespawnTick = -1;
+            currentArea = null;
 
             if (gameState != GameState.LOADING) {
-                brokenLamps.clear();
                 resetLampStatuses();
             }
         }
@@ -218,6 +221,8 @@ public class DKLampsStateManager {
         }
     }
 
+
+
     private void detectInformativeStairs() {
         informativeStairs.clear();
 
@@ -233,13 +238,10 @@ public class DKLampsStateManager {
             WorldPoint stairLocation = stair.getWorldLocation();
             int distanceToPlayer = playerLocation.distanceTo(stairLocation);
 
-            for (int plane = 0; plane <= 2; plane++) {
-                if (plane == stairLocation.getPlane()) {
-                    continue;
-                }
-
-                WorldPoint targetPlane = new WorldPoint(stairLocation.getX(), stairLocation.getY(), plane);
-                Area targetArea = DKLampsHelper.getArea(targetPlane);
+            Set<WorldPoint> destinations = DKLampsHelper.getStairDestinations(stairLocation);
+            
+            for (WorldPoint destination : destinations) {
+                Area targetArea = DKLampsHelper.getArea(destination);
 
                 if (targetArea != null && DKLampsHelper.areaHasUnknownLamps(targetArea, lampStatuses)) {
                     int currentMinDistance = minDistanceForArea.getOrDefault(targetArea, Integer.MAX_VALUE);

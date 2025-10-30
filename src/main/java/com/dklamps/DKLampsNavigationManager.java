@@ -22,6 +22,7 @@ import net.runelite.api.coords.WorldPoint;
 public class DKLampsNavigationManager {
 
     private final Client client;
+    private final DKLampsConfig config;
     private final Pathfinder pathfinder;
     private final ExecutorService pathfindingExecutor;
 
@@ -39,8 +40,9 @@ public class DKLampsNavigationManager {
     
     private final Set<Lamp> brokenLamps = new HashSet<>();
 
-    public DKLampsNavigationManager(Client client, Pathfinder pathfinder, ExecutorService pathfindingExecutor) {
+    public DKLampsNavigationManager(Client client, DKLampsConfig config, Pathfinder pathfinder, ExecutorService pathfindingExecutor) {
         this.client = client;
+        this.config = config;
         this.pathfinder = pathfinder;
         this.pathfindingExecutor = pathfindingExecutor;
     }
@@ -49,7 +51,21 @@ public class DKLampsNavigationManager {
                          InventoryState inventoryState, 
                          WorldPoint playerLocation, 
                          GameObject wireMachine) {
-        
+
+        if (!config.showPathToLocation()) {
+            if (!shortestPath.isEmpty()) {
+                shortestPath.clear();
+            }
+            if (currentTargetType != TargetType.NONE) {
+                 currentTargetType = TargetType.NONE;
+                 closestDistance = 0;
+            }
+            if (currentClosestLampTask != null && !currentClosestLampTask.isDone()) {
+                currentClosestLampTask.cancel(true);
+            }
+            return;
+        }
+
         if (playerLocation == null || pathfinder == null || pathfindingExecutor == null) {
             return;
         }
@@ -84,6 +100,15 @@ public class DKLampsNavigationManager {
 
     public void shutDown() {
         if (currentClosestLampTask != null) {
+            currentClosestLampTask.cancel(true);
+        }
+    }
+
+    public void clearPathAndTarget() {
+        shortestPath.clear();
+        closestDistance = 0;
+        currentTargetType = TargetType.NONE;
+        if (currentClosestLampTask != null && !currentClosestLampTask.isDone()) {
             currentClosestLampTask.cancel(true);
         }
     }

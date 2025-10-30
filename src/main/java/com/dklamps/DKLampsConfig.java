@@ -4,6 +4,7 @@ import java.awt.Color;
 
 import com.dklamps.enums.DisplayFloorType;
 import com.dklamps.enums.HighlightType;
+import com.dklamps.enums.PathDrawStyle;
 import com.dklamps.enums.TimerType;
 
 import net.runelite.client.config.Config;
@@ -328,13 +329,34 @@ public interface DKLampsConfig extends Config{
     String highlightStyleSection = "highlightStyleSection";
 
     @ConfigItem(
-        keyName = "highlightStyle",
-        name = "Highlight Style",
-        description = "Choose how to highlight lamps.",
-        section = highlightStyleSection,
+        keyName = "pathDrawStyle",
+        name = "Path Style",
+        description = "How the path to your target should be drawn",
         position = 1
     )
-    default HighlightType highlightStyle() {
+    default PathDrawStyle pathDrawStyle() {
+        return PathDrawStyle.TILES;
+    }
+
+    @ConfigItem(
+        keyName = "lampsHighlightStyle",
+        name = "Lamps Highlight Style",
+        description = "Choose how to highlight lamps.",
+        section = highlightStyleSection,
+        position = 2
+    )
+    default HighlightType lampsHighlightStyle() {
+        return HighlightType.HIGHLIGHT_CLICKBOX;
+    }
+
+    @ConfigItem(
+        keyName = "objectsHighlightStyle",
+        name = "Objects Highlight Style",
+        description = "Choose how to highlight objects (stairs and doors).",
+        section = highlightStyleSection,
+        position = 3
+    )
+    default HighlightType objectsHighlightStyle() {
         return HighlightType.HIGHLIGHT_CLICKBOX;
     }
 
@@ -344,7 +366,7 @@ public interface DKLampsConfig extends Config{
 		name = "Border Feather",
 		description = "The feathering amount for the border highlight.",
         section = highlightStyleSection,
-        position = 2
+        position = 4
 	)
 	default int borderFeather() {
 		return 0;
@@ -356,7 +378,7 @@ public interface DKLampsConfig extends Config{
 		name = "Border Thickness",
 		description = "The thickness of the border highlight.",
         section = highlightStyleSection,
-        position = 3
+        position = 5
 	)
 	default int borderThickness() {
 		return 2;
