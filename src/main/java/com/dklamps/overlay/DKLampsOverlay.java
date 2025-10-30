@@ -260,7 +260,7 @@ public class DKLampsOverlay extends Overlay {
             }
 
             WorldPoint stairLocation = stair.getWorldLocation();
-            if (DKLampsHelper.isStairBetweenTransportPoints(stairLocation, activeTransports)) {
+            if (isStairBetweenTransportPoints(stairLocation, activeTransports)) {
                 renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
                         config.objectsHighlightStyle());
             }
@@ -282,7 +282,14 @@ public class DKLampsOverlay extends Overlay {
         }
     }
 
-
+    private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports) {
+        for (Transport transport : activeTransports) {
+            if (DKLampsHelper.isLocationBetweenTransportPoints(objectLocation, transport)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private void renderWireTimer(Graphics2D graphics) {
         int respawnTick = plugin.getStateManager().getWireRespawnTick();

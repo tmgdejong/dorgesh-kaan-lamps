@@ -3,6 +3,8 @@ package com.dklamps;
 import com.dklamps.enums.Area;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
+import com.dklamps.enums.Transport;
+
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -221,8 +223,6 @@ public class DKLampsStateManager {
         }
     }
 
-
-
     private void detectInformativeStairs() {
         informativeStairs.clear();
 
@@ -238,9 +238,12 @@ public class DKLampsStateManager {
             WorldPoint stairLocation = stair.getWorldLocation();
             int distanceToPlayer = playerLocation.distanceTo(stairLocation);
 
-            Set<WorldPoint> destinations = DKLampsHelper.getStairDestinations(stairLocation);
-            
-            for (WorldPoint destination : destinations) {
+            for (Transport transport : Transport.values()) {
+                if (!DKLampsHelper.isLocationBetweenTransportPoints(stairLocation, transport)) {
+                    continue;
+                }
+
+                WorldPoint destination = transport.getDestination();
                 Area targetArea = DKLampsHelper.getArea(destination);
 
                 if (targetArea != null && DKLampsHelper.areaHasUnknownLamps(targetArea, lampStatuses)) {
