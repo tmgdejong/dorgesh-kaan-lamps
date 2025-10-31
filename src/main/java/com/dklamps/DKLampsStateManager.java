@@ -38,7 +38,7 @@ public class DKLampsStateManager {
     @Getter
     private final Set<GameObject> stairs = new HashSet<>();
     @Getter
-    private final Set<WorldPoint> informativeStairs = new HashSet<>();
+    private final Set<GameObject> informativeStairs = new HashSet<>();
     @Getter
     private GameObject wireMachine;
     @Getter
@@ -231,16 +231,18 @@ public class DKLampsStateManager {
             return;
         }
 
-        Map<Area, WorldPoint> closestStairForArea = new EnumMap<>(Area.class);
+        Map<Area, GameObject> closestStairForArea = new EnumMap<>(Area.class);
         Map<Area, Integer> minDistanceForArea = new EnumMap<>(Area.class);
 
         for (GameObject stair : stairs) {
             WorldPoint stairLocation = stair.getWorldLocation();
             int distanceToPlayer = playerLocation.distanceTo(stairLocation);
-            if (DKLampsConstants.STAIR_IDS_UP.contains(stair.getId()) {
-                Area targetArea = DKLampsHelper.getArea(stairLocation.dz(1));
-            } else if (DKLampsConstants.STAIR_IDS_DOWN.contains(stair.getId()) {
-                Area targetArea = DKLampsHelper.getArea(stairLocation.dz(-1));
+
+            Area targetArea;
+            if (DKLampsConstants.STAIR_IDS_UP.contains(stair.getId())) {
+                targetArea = DKLampsHelper.getArea(stairLocation.dz(1));
+            } else if (DKLampsConstants.STAIR_IDS_DOWN.contains(stair.getId())) {
+                targetArea = DKLampsHelper.getArea(stairLocation.dz(-1));
             } else {
                 continue;
             }
@@ -250,7 +252,7 @@ public class DKLampsStateManager {
 
                 if (distanceToPlayer < currentMinDistance) {
                     minDistanceForArea.put(targetArea, distanceToPlayer);
-                    closestStairForArea.put(targetArea, stairLocation);
+                    closestStairForArea.put(targetArea, stair);
                 }
             }
         }

@@ -66,10 +66,10 @@ public static final Set<Integer> STAIR_IDS_DOWN = ImmutableSet.of(
             22942
     );
     
-    public static final Set<Integer> STAIR_IDS = ImmutableSet.of(
-            STAIR_IDS_UP,
-            STAIR_IDS_DOWN
-    );
+    public static final Set<Integer> STAIR_IDS = ImmutableSet.<Integer>builder()
+            .addAll(STAIR_IDS_UP)
+            .addAll(STAIR_IDS_DOWN)
+            .build();
     
     // Bank location in Dorgesh-Kaan
     public static final WorldPoint WIRE_MACHINE_LOCATION = new WorldPoint(2716, 5274, 0);

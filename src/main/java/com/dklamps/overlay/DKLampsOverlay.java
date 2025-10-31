@@ -8,8 +8,10 @@ import java.awt.Polygon;
 import java.awt.Shape;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 
@@ -48,6 +50,9 @@ public class DKLampsOverlay extends Overlay {
     private final DKLampsConfig config;
     private final ModelOutlineRenderer modelOutlineRenderer;
 
+    Map<WorldPoint, WallObject> doors = new HashMap<>();
+    Map<WorldPoint, GameObject> stairs = new HashMap<>();
+
     @Inject
     private DKLampsOverlay(Client client, DKLampsPlugin plugin, DKLampsConfig config,
             ModelOutlineRenderer modelOutlineRenderer) {
@@ -68,6 +73,8 @@ public class DKLampsOverlay extends Overlay {
         Set<WorldPoint> pathPoints = new HashSet<>(plugin.getNavigationManager().getShortestPath());
 
         renderLamps(graphics);
+
+        drawPathToLocation(graphics, pathPoints);
 
         if (config.highlightClosedDoors()) {
             for (WallObject door : plugin.getStateManager().getDoors()) {
@@ -101,8 +108,6 @@ public class DKLampsOverlay extends Overlay {
                 renderWireTimer(graphics);
             }
         }
-
-        drawPathToLocation(graphics, pathPoints);
 
         return null;
     }
