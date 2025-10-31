@@ -48,19 +48,27 @@ public final class DKLampsConstants {
             22921
     );
 
-    public static final Set<Integer> STAIR_IDS = ImmutableSet.of(
+public static final Set<Integer> STAIR_IDS_UP = ImmutableSet.of(
             22931,
+            22934,
+            22937,
+            22939,
+            22941
+    );
+    
+public static final Set<Integer> STAIR_IDS_DOWN = ImmutableSet.of(
             22932,
             22933,
-            22934,
             22935,
             22936,
-            22937,
             22938,
-            22939,
             22940,
-            22941,
             22942
+    );
+    
+    public static final Set<Integer> STAIR_IDS = ImmutableSet.of(
+            STAIR_IDS_UP,
+            STAIR_IDS_DOWN
     );
     
     // Bank location in Dorgesh-Kaan

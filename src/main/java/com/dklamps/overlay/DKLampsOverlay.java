@@ -82,12 +82,11 @@ public class DKLampsOverlay extends Overlay {
         }
 
         if (config.highlightInformativeStairs()) {
-            for (GameObject stair : plugin.getStateManager().getStairs()) {
+            for (GameObject stair : plugin.getStateManager().getInformativeStairs()) {
                 if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
-                if (plugin.getStateManager().getInformativeStairs().contains(stair.getWorldLocation())
-                        && !pathPoints.contains(stair.getWorldLocation())) {
+                if (!pathPoints.contains(stair.getWorldLocation())) {
                     renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
                 }
             }

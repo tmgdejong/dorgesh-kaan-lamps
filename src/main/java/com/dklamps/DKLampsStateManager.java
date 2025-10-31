@@ -237,22 +237,20 @@ public class DKLampsStateManager {
         for (GameObject stair : stairs) {
             WorldPoint stairLocation = stair.getWorldLocation();
             int distanceToPlayer = playerLocation.distanceTo(stairLocation);
+            if (DKLampsConstants.STAIR_IDS_UP.contains(stair.getId()) {
+                Area targetArea = DKLampsHelper.getArea(stairLocation.dz(1));
+            } else if (DKLampsConstants.STAIR_IDS_DOWN.contains(stair.getId()) {
+                Area targetArea = DKLampsHelper.getArea(stairLocation.dz(-1));
+            } else {
+                continue;
+            }
 
-            for (Transport transport : Transport.values()) {
-                if (!DKLampsHelper.isLocationBetweenTransportPoints(stairLocation, transport)) {
-                    continue;
-                }
+            if (targetArea != null && DKLampsHelper.areaHasUnknownLamps(targetArea, lampStatuses)) {
+                int currentMinDistance = minDistanceForArea.getOrDefault(targetArea, Integer.MAX_VALUE);
 
-                WorldPoint destination = transport.getDestination();
-                Area targetArea = DKLampsHelper.getArea(destination);
-
-                if (targetArea != null && DKLampsHelper.areaHasUnknownLamps(targetArea, lampStatuses)) {
-                    int currentMinDistance = minDistanceForArea.getOrDefault(targetArea, Integer.MAX_VALUE);
-
-                    if (distanceToPlayer < currentMinDistance) {
-                        minDistanceForArea.put(targetArea, distanceToPlayer);
-                        closestStairForArea.put(targetArea, stairLocation);
-                    }
+                if (distanceToPlayer < currentMinDistance) {
+                    minDistanceForArea.put(targetArea, distanceToPlayer);
+                    closestStairForArea.put(targetArea, stairLocation);
                 }
             }
         }
