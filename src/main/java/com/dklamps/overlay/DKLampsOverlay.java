@@ -50,8 +50,8 @@ public class DKLampsOverlay extends Overlay {
     private final DKLampsConfig config;
     private final ModelOutlineRenderer modelOutlineRenderer;
 
-    Map<WorldPoint, WallObject> doors = new HashMap<>();
-    Map<WorldPoint, GameObject> stairs = new HashMap<>();
+    private final Map<WorldPoint, WallObject> doorsMap = new HashMap<>();
+    private final Map<WorldPoint, GameObject> stairsMap = new HashMap<>();
 
     @Inject
     private DKLampsOverlay(Client client, DKLampsPlugin plugin, DKLampsConfig config,
@@ -72,19 +72,26 @@ public class DKLampsOverlay extends Overlay {
 
         Set<WorldPoint> pathPoints = new HashSet<>(plugin.getNavigationManager().getShortestPath());
 
+        doorsMap.clear();
+        for (WallObject door : plugin.getStateManager().getDoors()) {
+            doorsMap.put(door.getWorldLocation(), door);
+        }
+
+        stairsMap.clear();
+        for (GameObject stair : plugin.getStateManager().getStairs()) {
+            stairsMap.put(stair.getWorldLocation(), stair);
+        }
+
         renderLamps(graphics);
 
         drawPathToLocation(graphics, pathPoints);
 
         if (config.highlightClosedDoors()) {
-            for (WallObject door : plugin.getStateManager().getDoors()) {
+            for (WallObject door : doorsMap.values()) {
                 if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
-
-                if (!pathPoints.contains(door.getWorldLocation())) {
-                    renderTileObject(door, config.doorHighlightColor(), graphics, config.objectsHighlightStyle());
-                }
+                renderTileObject(door, config.doorHighlightColor(), graphics, config.objectsHighlightStyle());
             }
         }
 
@@ -93,9 +100,10 @@ public class DKLampsOverlay extends Overlay {
                 if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
-                if (!pathPoints.contains(stair.getWorldLocation())) {
-                    renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
+                if (!stairsMap.containsValue(stair)) {
+                    continue;
                 }
+                renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
             }
         }
 
@@ -192,6 +200,7 @@ public class DKLampsOverlay extends Overlay {
         Set<Transport> activeTransports = new HashSet<>();
         PathDrawStyle style = config.pathDrawStyle();
         Point prevScreenPoint = null;
+        boolean isAfterClosedDoor = false;
 
         for (WorldPoint point : path) {
             if (point.getPlane() != client.getTopLevelWorldView().getPlane()) {
@@ -205,19 +214,23 @@ public class DKLampsOverlay extends Overlay {
                 continue;
             }
 
+            Color pathColor = isUtilityTarget ? config.utilityPathColor() : config.pathColor();
+            if (isAfterClosedDoor) {
+                pathColor = pathColor.darker().darker();
+            }
+
             switch (style) {
                 case TILES:
                     Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
                     if (poly != null) {
-                        OverlayUtil.renderPolygon(graphics, poly,
-                                isUtilityTarget ? config.utilityPathColor() : config.pathColor());
+                        OverlayUtil.renderPolygon(graphics, poly, pathColor);
                     }
                     break;
 
                 case TILE_BORDERS:
                     Polygon borderPoly = Perspective.getCanvasTilePoly(client, localPoint);
                     if (borderPoly != null) {
-                        graphics.setColor(isUtilityTarget ? config.utilityPathColor() : config.pathColor());
+                        graphics.setColor(pathColor);
                         graphics.draw(borderPoly);
                     }
                     break;
@@ -229,13 +242,20 @@ public class DKLampsOverlay extends Overlay {
                         continue;
                     }
                     if (prevScreenPoint != null) {
-                        graphics.setColor(isUtilityTarget ? config.utilityPathColor() : config.pathColor());
+                        graphics.setColor(pathColor);
                         graphics.setStroke(new BasicStroke(2));
                         graphics.drawLine(prevScreenPoint.getX(), prevScreenPoint.getY(), screenPoint.getX(),
                                 screenPoint.getY());
                     }
                     prevScreenPoint = screenPoint;
                     break;
+            }
+
+            WallObject door = doorsMap.get(point);
+            if (door != null) {
+                renderTileObject(door, pathColor, graphics, config.objectsHighlightStyle());
+                doorsMap.remove(point);
+                isAfterClosedDoor = true;
             }
 
             List<Transport> transports = plugin.getPathfinder().getTransportsAt(point);
@@ -247,8 +267,6 @@ public class DKLampsOverlay extends Overlay {
         }
 
         highlightTransportsOnPath(graphics, activeTransports, isUtilityTarget);
-        highlightDoorsOnPath(graphics, pathPoints, isUtilityTarget);
-
     }
 
     private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports,
@@ -258,7 +276,7 @@ public class DKLampsOverlay extends Overlay {
             return;
         }
 
-        for (GameObject stair : plugin.getStateManager().getStairs()) {
+        for (GameObject stair : new HashSet<>(stairsMap.values())) {
             if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
             }
@@ -267,24 +285,25 @@ public class DKLampsOverlay extends Overlay {
             if (isStairBetweenTransportPoints(stairLocation, activeTransports)) {
                 renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
                         config.objectsHighlightStyle());
+                stairsMap.remove(stairLocation);
             }
         }
 
     }
 
-    private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints, boolean isUtilityTarget) {
-        for (WallObject door : plugin.getStateManager().getDoors()) {
-            if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
-                continue;
-            }
+    // private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints, boolean isUtilityTarget) {
+    //     for (WallObject door : plugin.getStateManager().getDoors()) {
+    //         if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
+    //             continue;
+    //         }
 
-            WorldPoint doorLocation = door.getWorldLocation();
-            if (pathPoints.contains(doorLocation)) {
-                renderTileObject(door, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
-                        config.objectsHighlightStyle());
-            }
-        }
-    }
+    //         WorldPoint doorLocation = door.getWorldLocation();
+    //         if (pathPoints.contains(doorLocation)) {
+    //             renderTileObject(door, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
+    //                     config.objectsHighlightStyle());
+    //         }
+    //     }
+    // }
 
     private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports) {
         for (Transport transport : activeTransports) {
