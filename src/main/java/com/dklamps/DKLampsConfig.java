@@ -95,7 +95,7 @@ public interface DKLampsConfig extends Config {
 		position = 1
 	)
 	default HighlightType lampsHighlightStyle() {
-		return HighlightType.HIGHLIGHT_CLICKBOX;
+		return HighlightType.CLICKBOX;
 	}
 
 	@ConfigItem(
@@ -202,7 +202,7 @@ public interface DKLampsConfig extends Config {
 		position = 1
 	)
 	default HighlightType objectsHighlightStyle() {
-		return HighlightType.HIGHLIGHT_CLICKBOX;
+		return HighlightType.CLICKBOX;
 	}
 
 	@ConfigItem(

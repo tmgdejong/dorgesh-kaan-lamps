@@ -3,8 +3,6 @@ package com.dklamps;
 import com.dklamps.enums.Area;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
-import com.dklamps.enums.Transport;
-
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,11 +32,14 @@ public class DKLampsStateManager {
     @Getter
     private final Map<WorldPoint, GameObject> spawnedLamps = new HashMap<>();
     @Getter
-    private final Set<WallObject> doors = new HashSet<>();
+    private final Map<WorldPoint, WallObject> spawnedDoors = new HashMap<>();
     @Getter
-    private final Set<GameObject> stairs = new HashSet<>();
+    private final Map<WorldPoint, GameObject> spawnedStairs = new HashMap<>();
     @Getter
     private final Set<GameObject> informativeStairs = new HashSet<>();
+
+    private final Map<WorldPoint, Area> stairTargetAreaMap = new HashMap<>();
+
     @Getter
     private GameObject wireMachine;
     @Getter
@@ -48,7 +49,6 @@ public class DKLampsStateManager {
     @Getter
     private Area currentArea = null;
     private Area lastArea = null;
-    private String lastHintDirection = null;
     private String lastHintFloor = null;
     private final Set<Lamp> fixedLamps = new HashSet<>();
     @Getter
@@ -65,8 +65,9 @@ public class DKLampsStateManager {
 
     public void shutDown() {
         spawnedLamps.clear();
-        doors.clear();
-        stairs.clear();
+        spawnedDoors.clear();
+        spawnedStairs.clear();
+        stairTargetAreaMap.clear();
         informativeStairs.clear();
         previouslyBrokenLamps.clear();
         fixedLamps.clear();
@@ -80,14 +81,15 @@ public class DKLampsStateManager {
     }
 
     public void onGameTick() {
-        if (client.getLocalPlayer() == null) {
+        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+        if (playerLocation == null) {
             return;
         }
 
         gameTickCounter++;
         boolean isHeavyOperationTick = (gameTickCounter % HEAVY_OPERATIONS_INTERVAL) == 0;
 
-        currentArea = DKLampsHelper.getArea(client.getLocalPlayer().getWorldLocation());
+        currentArea = DKLampsHelper.getArea(playerLocation);
         if (currentArea == null) {
             lastArea = null;
             return;
@@ -130,7 +132,7 @@ public class DKLampsStateManager {
         lampStatuses.putAll(newStatuses);
 
         if (isHeavyOperationTick) {
-            detectInformativeStairs();
+            detectInformativeStairs(playerLocation);
         }
 
         previouslyBrokenLamps.clear();
@@ -142,7 +144,8 @@ public class DKLampsStateManager {
         if (DKLampsHelper.isLamp(gameObject.getId())) {
             spawnedLamps.put(gameObject.getWorldLocation(), gameObject);
         } else if (DKLampsConstants.STAIR_IDS.contains(gameObject.getId())) {
-            stairs.add(gameObject);
+            spawnedStairs.put(gameObject.getWorldLocation(), gameObject);
+            cacheStairTargetArea(gameObject);
         } else if (DKLampsConstants.WIRE_MACHINE_IDS.contains(gameObject.getId())) {
             wireMachine = gameObject;
             if (gameObject.getId() == DKLampsConstants.WIRE_MACHINE_INACTIVE) {
@@ -157,7 +160,8 @@ public class DKLampsStateManager {
         if (DKLampsHelper.isLamp(gameObject.getId())) {
             spawnedLamps.remove(gameObject.getWorldLocation());
         } else if (DKLampsConstants.STAIR_IDS.contains(gameObject.getId())) {
-            stairs.remove(gameObject);
+            spawnedStairs.remove(gameObject.getWorldLocation());
+            stairTargetAreaMap.remove(gameObject.getWorldLocation());
         } else if (DKLampsConstants.WIRE_MACHINE_IDS.contains(gameObject.getId())) {
             wireMachine = null;
             wireRespawnTick = -1;
@@ -166,13 +170,13 @@ public class DKLampsStateManager {
 
     public void onWallObjectSpawned(WallObject wallObject) {
         if (DKLampsConstants.DOOR_IDS.contains(wallObject.getId())) {
-            doors.add(wallObject);
+            spawnedDoors.put(wallObject.getWorldLocation(), wallObject);
         }
     }
 
     public void onWallObjectDespawned(WallObject wallObject) {
         if (DKLampsConstants.DOOR_IDS.contains(wallObject.getId())) {
-            doors.remove(wallObject);
+            spawnedDoors.remove(wallObject.getWorldLocation());
         }
     }
 
@@ -182,8 +186,9 @@ public class DKLampsStateManager {
                 gameState == GameState.HOPPING) {
 
             spawnedLamps.clear();
-            doors.clear();
-            stairs.clear();
+            spawnedDoors.clear();
+            spawnedStairs.clear();
+            stairTargetAreaMap.clear();
             informativeStairs.clear();
             wireMachine = null;
             wireRespawnTick = -1;
@@ -201,7 +206,6 @@ public class DKLampsStateManager {
 
         if (chatMessageType == ChatMessageType.GAMEMESSAGE && 
                 message.contains(DKLampsConstants.NEARBY_LAMP_CHAT_MESSAGE)) {
-            log.info("Nearby lamp chat message detected: {}", message);
             parseNearbyLampChatMessage(message);
         }
     }
@@ -211,7 +215,6 @@ public class DKLampsStateManager {
         if (matcher.find()) {
             log.info("Parsed nearby lamp hint: direction={}, floor={}",
                     matcher.group(1), matcher.group(2));
-            lastHintDirection = matcher.group(1);
             lastHintFloor = matcher.group(2);
         }
     }
@@ -223,31 +226,52 @@ public class DKLampsStateManager {
         }
     }
 
-    private void detectInformativeStairs() {
+    private void cacheStairTargetArea(GameObject stair) {
+        WorldPoint stairLocation = stair.getWorldLocation();
+        if (stairTargetAreaMap.containsKey(stairLocation)) {
+            return;
+        }
+
+        Area targetArea = null;
+        if (DKLampsConstants.STAIR_IDS_UP.contains(stair.getId())) {
+            targetArea = DKLampsHelper.getArea(stairLocation.dz(1));
+        } else if (DKLampsConstants.STAIR_IDS_DOWN.contains(stair.getId())) {
+            targetArea = DKLampsHelper.getArea(stairLocation.dz(-1));
+        }
+
+        if (targetArea != null) {
+            stairTargetAreaMap.put(stairLocation, targetArea);
+        }
+    }
+
+    private void detectInformativeStairs(WorldPoint playerLocation) {
         informativeStairs.clear();
 
-        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
-        if (playerLocation == null || stairs.isEmpty()) {
+        if (spawnedStairs.isEmpty()) {
+            return;
+        }
+
+        Set<Area> unknownAreas = new HashSet<>();
+        for (Area area : Area.values()) {
+            if (DKLampsHelper.areaHasUnknownLamps(area, lampStatuses)) {
+                unknownAreas.add(area);
+            }
+        }
+
+        if (unknownAreas.isEmpty()) {
             return;
         }
 
         Map<Area, GameObject> closestStairForArea = new EnumMap<>(Area.class);
         Map<Area, Integer> minDistanceForArea = new EnumMap<>(Area.class);
 
-        for (GameObject stair : stairs) {
+        for (GameObject stair : spawnedStairs.values()) {
             WorldPoint stairLocation = stair.getWorldLocation();
-            int distanceToPlayer = playerLocation.distanceTo(stairLocation);
+            
+            Area targetArea = stairTargetAreaMap.get(stairLocation);
 
-            Area targetArea;
-            if (DKLampsConstants.STAIR_IDS_UP.contains(stair.getId())) {
-                targetArea = DKLampsHelper.getArea(stairLocation.dz(1));
-            } else if (DKLampsConstants.STAIR_IDS_DOWN.contains(stair.getId())) {
-                targetArea = DKLampsHelper.getArea(stairLocation.dz(-1));
-            } else {
-                continue;
-            }
-
-            if (targetArea != null && DKLampsHelper.areaHasUnknownLamps(targetArea, lampStatuses)) {
+            if (targetArea != null && unknownAreas.contains(targetArea)) {
+                int distanceToPlayer = playerLocation.distanceTo(stairLocation);
                 int currentMinDistance = minDistanceForArea.getOrDefault(targetArea, Integer.MAX_VALUE);
 
                 if (distanceToPlayer < currentMinDistance) {

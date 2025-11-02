@@ -8,7 +8,6 @@ import java.awt.Polygon;
 import java.awt.Shape;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +49,6 @@ public class DKLampsOverlay extends Overlay {
     private final DKLampsConfig config;
     private final ModelOutlineRenderer modelOutlineRenderer;
 
-    private final Map<WorldPoint, WallObject> doorsMap = new HashMap<>();
-    private final Map<WorldPoint, GameObject> stairsMap = new HashMap<>();
-
     @Inject
     private DKLampsOverlay(Client client, DKLampsPlugin plugin, DKLampsConfig config,
             ModelOutlineRenderer modelOutlineRenderer) {
@@ -72,26 +68,23 @@ public class DKLampsOverlay extends Overlay {
 
         Set<WorldPoint> pathPoints = new HashSet<>(plugin.getNavigationManager().getShortestPath());
 
-        doorsMap.clear();
-        for (WallObject door : plugin.getStateManager().getDoors()) {
-            doorsMap.put(door.getWorldLocation(), door);
-        }
+        Map<WorldPoint, WallObject> doorsMap = plugin.getStateManager().getSpawnedDoors();
+        Map<WorldPoint, GameObject> stairsMap = plugin.getStateManager().getSpawnedStairs();
 
-        stairsMap.clear();
-        for (GameObject stair : plugin.getStateManager().getStairs()) {
-            stairsMap.put(stair.getWorldLocation(), stair);
-        }
+        Set<TileObject> pathRenderedObjects = new HashSet<>();
 
         renderLamps(graphics);
 
-        drawPathToLocation(graphics, pathPoints);
+        drawPathToLocation(graphics, pathPoints, pathRenderedObjects, doorsMap, stairsMap);
 
         if (config.highlightClosedDoors()) {
             for (WallObject door : doorsMap.values()) {
                 if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
-                renderTileObject(door, config.doorHighlightColor(), graphics, config.objectsHighlightStyle());
+                if (!pathRenderedObjects.contains(door)) {
+                    renderTileObject(door, config.doorHighlightColor(), graphics, config.objectsHighlightStyle());
+                }
             }
         }
 
@@ -100,10 +93,9 @@ public class DKLampsOverlay extends Overlay {
                 if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                     continue;
                 }
-                if (!stairsMap.containsValue(stair)) {
-                    continue;
+                if (!pathRenderedObjects.contains(stair)) {
+                    renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
                 }
-                renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
             }
         }
 
@@ -155,10 +147,10 @@ public class DKLampsOverlay extends Overlay {
 
     private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics, HighlightType style) {
         switch (style) {
-            case HIGHLIGHT_BORDER:
+            case BORDER:
                 modelOutlineRenderer.drawOutline(tileObject, config.borderThickness(), color, config.borderFeather());
                 break;
-            case HIGHLIGHT_CLICKBOX:
+            case CLICKBOX:
                 Shape clickbox = tileObject.getClickbox();
                 if (clickbox != null) {
                     Point mousePosition = client.getMouseCanvasPosition();
@@ -175,7 +167,8 @@ public class DKLampsOverlay extends Overlay {
         }
     }
 
-    private void drawPathToLocation(Graphics2D graphics, Set<WorldPoint> pathPoints) {
+    private void drawPathToLocation(Graphics2D graphics, Set<WorldPoint> pathPoints, Set<TileObject> pathRenderedObjects,
+            Map<WorldPoint, WallObject> doorsMap, Map<WorldPoint, GameObject> stairsMap) {
         if (!config.showPathToLocation()) {
             return;
         }
@@ -254,7 +247,7 @@ public class DKLampsOverlay extends Overlay {
             WallObject door = doorsMap.get(point);
             if (door != null) {
                 renderTileObject(door, pathColor, graphics, config.objectsHighlightStyle());
-                doorsMap.remove(point);
+                pathRenderedObjects.add(door);
                 isAfterClosedDoor = true;
             }
 
@@ -266,17 +259,17 @@ public class DKLampsOverlay extends Overlay {
             }
         }
 
-        highlightTransportsOnPath(graphics, activeTransports, isUtilityTarget);
+        highlightTransportsOnPath(graphics, activeTransports, isUtilityTarget, pathRenderedObjects, stairsMap);
     }
 
     private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports,
-            boolean isUtilityTarget) {
+            boolean isUtilityTarget, Set<TileObject> pathRenderedObjects, Map<WorldPoint, GameObject> stairsMap) {
 
         if (activeTransports.isEmpty()) {
             return;
         }
 
-        for (GameObject stair : new HashSet<>(stairsMap.values())) {
+        for (GameObject stair : stairsMap.values()) {
             if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
                 continue;
             }
@@ -285,25 +278,11 @@ public class DKLampsOverlay extends Overlay {
             if (isStairBetweenTransportPoints(stairLocation, activeTransports)) {
                 renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
                         config.objectsHighlightStyle());
-                stairsMap.remove(stairLocation);
+                pathRenderedObjects.add(stair);
             }
         }
 
     }
-
-    // private void highlightDoorsOnPath(Graphics2D graphics, Set<WorldPoint> pathPoints, boolean isUtilityTarget) {
-    //     for (WallObject door : plugin.getStateManager().getDoors()) {
-    //         if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
-    //             continue;
-    //         }
-
-    //         WorldPoint doorLocation = door.getWorldLocation();
-    //         if (pathPoints.contains(doorLocation)) {
-    //             renderTileObject(door, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
-    //                     config.objectsHighlightStyle());
-    //         }
-    //     }
-    // }
 
     private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports) {
         for (Transport transport : activeTransports) {

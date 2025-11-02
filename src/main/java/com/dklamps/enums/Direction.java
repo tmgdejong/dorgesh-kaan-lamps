@@ -25,4 +25,8 @@ public enum Direction {
     public int getY() {
         return y;
     }
+
+    public boolean isDiagonal() {
+        return this == SOUTH_WEST || this == SOUTH_EAST || this == NORTH_WEST || this == NORTH_EAST;
+    }
 }

@@ -1,6 +1,9 @@
 package com.dklamps.pathfinder;
 
 import com.dklamps.enums.Transport;
+
+import lombok.extern.slf4j.Slf4j;
+
 import com.dklamps.enums.Direction;
 import com.dklamps.enums.Lamp;
 import java.io.IOException;
@@ -11,11 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+
+import net.runelite.api.Tile;
+import net.runelite.api.WallObject;
+import net.runelite.api.WorldView;
 import net.runelite.api.coords.WorldPoint;
 
+@Slf4j
 public class Pathfinder {
-    private static final int MAX_ITERATIONS = 10000; // Reasonable limit to prevent hangs
-    private static final int MAX_PATH_LENGTH = 512; // Reasonable path length limit
+    private static final int MAX_ITERATIONS = 10000;
+    private static final int MAX_PATH_LENGTH = 512;
 
     private final CollisionMap collisionMap;
     private final Map<WorldPoint, List<Transport>> transports;
@@ -43,31 +51,26 @@ public class Pathfinder {
     }
     
     private List<WorldPoint> findPathInternal(WorldPoint start, WorldPoint end, int maxIterations) {
-        // Basic validation
         if (start == null || end == null) {
             return new ArrayList<>();
         }
 
-        // If already at destination
         if (start.equals(end)) {
             List<WorldPoint> path = new ArrayList<>();
             path.add(start);
             return path;
         }
 
-        // Check if destinations are too far apart (rough distance check)
         int roughDistance = Math.abs(start.getX() - end.getX()) + Math.abs(start.getY() - end.getY());
         if (roughDistance > MAX_PATH_LENGTH) {
-            System.out.println("DEBUG: Pathfinding rejected - too far apart: " + roughDistance + " > " + MAX_PATH_LENGTH);
-            return new ArrayList<>(); // Destination too far
+            log.debug("Pathfinding rejected - too far apart: " + roughDistance + " > " + MAX_PATH_LENGTH);
+            return new ArrayList<>();
         }
         
-        // If the lamp is on a different plane, we need to find a path that includes transports
         boolean crossPlane = start.getPlane() != end.getPlane();
                 
         Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
         
-        // Find the lamp at this location to get unreachable directions
         Lamp targetLamp = null;
         for (Lamp lamp : Lamp.values()) {
             if (lamp.getWorldPoint().equals(end)) {
@@ -79,7 +82,6 @@ public class Pathfinder {
         WorldPoint bestTarget = null;
         int closestDistance = Integer.MAX_VALUE;
         
-        // If we're on the same plane, find adjacent walkable tiles
         if (!crossPlane) {
             for (Direction direction : cardinalDirections) {
                 // Skip this direction if it's marked as unreachable for this lamp
@@ -88,7 +90,17 @@ public class Pathfinder {
                 }
                 
                 WorldPoint nearby = new WorldPoint(end.getX() + direction.getX(), end.getY() + direction.getY(), end.getPlane());
-                
+                WorldView worldView = client.getTopLevelWorldView();
+
+                Tile tile = worldView.getTile(nearby);
+                if (tile != null) {
+                    WallObject wallObject = tile.getWallObject();
+                    if (wallObject != null)
+                    {
+                        continue;
+                    }
+                }
+
                 // Check if this nearby tile is actually walkable by getting its neighbors
                 List<Node> nearbyNeighbors = getNeighbors(new Node(nearby));
                 if (!nearbyNeighbors.isEmpty()) {
