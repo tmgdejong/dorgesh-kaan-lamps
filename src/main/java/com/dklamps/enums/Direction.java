@@ -1,5 +1,7 @@
 package com.dklamps.enums;
 
+import java.util.List;
+
 public enum Direction {
     WEST(-1, 0),
     EAST(1, 0),
@@ -28,5 +30,9 @@ public enum Direction {
 
     public boolean isDiagonal() {
         return this == SOUTH_WEST || this == SOUTH_EAST || this == NORTH_WEST || this == NORTH_EAST;
+    }
+
+    public static List<Direction> getCardinalDirections() {
+        return java.util.Arrays.asList(NORTH, EAST, SOUTH, WEST);
     }
 }

@@ -189,6 +189,7 @@ public class DKLampsPlugin extends Plugin {
 
         navigationManager.update(
                 stateManager.getLampStatuses(),
+                stateManager.getLampWallCache(),
                 inventoryState,
                 playerLocation,
                 stateManager.getWireMachine());

@@ -1,6 +1,7 @@
 package com.dklamps;
 
 import com.dklamps.enums.Area;
+import com.dklamps.enums.Direction;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
 import java.util.EnumMap;
@@ -33,6 +34,8 @@ public class DKLampsStateManager {
     private final Map<WorldPoint, GameObject> spawnedLamps = new HashMap<>();
     @Getter
     private final Map<WorldPoint, WallObject> spawnedDoors = new HashMap<>();
+    @Getter
+    private final Map<Lamp, Set<Direction>> lampWallCache = new EnumMap<>(Lamp.class);
     @Getter
     private final Map<WorldPoint, GameObject> spawnedStairs = new HashMap<>();
     @Getter
@@ -172,12 +175,14 @@ public class DKLampsStateManager {
         if (DKLampsConstants.DOOR_IDS.contains(wallObject.getId())) {
             spawnedDoors.put(wallObject.getWorldLocation(), wallObject);
         }
+        updateWallCache(wallObject.getWorldLocation(), true);
     }
 
     public void onWallObjectDespawned(WallObject wallObject) {
         if (DKLampsConstants.DOOR_IDS.contains(wallObject.getId())) {
             spawnedDoors.remove(wallObject.getWorldLocation());
         }
+        updateWallCache(wallObject.getWorldLocation(), false);
     }
 
     public void onGameStateChanged(GameState gameState) {
@@ -190,6 +195,7 @@ public class DKLampsStateManager {
             spawnedStairs.clear();
             stairTargetAreaMap.clear();
             informativeStairs.clear();
+            lampWallCache.clear();
             wireMachine = null;
             wireRespawnTick = -1;
             currentArea = null;
@@ -207,6 +213,29 @@ public class DKLampsStateManager {
         if (chatMessageType == ChatMessageType.GAMEMESSAGE && 
                 message.contains(DKLampsConstants.NEARBY_LAMP_CHAT_MESSAGE)) {
             parseNearbyLampChatMessage(message);
+        }
+    }
+
+    private void updateWallCache(WorldPoint wallLocation, boolean isSpawned) {
+        for (Lamp lamp : Lamp.values()) {
+            WorldPoint lampLocation = lamp.getWorldPoint();
+            if (lampLocation.distanceTo(wallLocation) > 1) {
+                continue;
+            }
+
+            for (Direction dir : Direction.values()) {
+                if (lampLocation.dx(dir.getX()).dy(dir.getY()).equals(wallLocation)) {
+                    if (isSpawned) {
+                        lampWallCache.computeIfAbsent(lamp, k -> new HashSet<>()).add(dir);
+                    } else {
+                        lampWallCache.computeIfPresent(lamp, (k, v) -> {
+                            v.remove(dir);
+                            return v.isEmpty() ? null : v;
+                        });
+                    }
+                    return; 
+                }
+            }
         }
     }
 

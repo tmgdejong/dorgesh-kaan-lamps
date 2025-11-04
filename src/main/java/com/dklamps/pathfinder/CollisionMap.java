@@ -60,6 +60,13 @@ public class CollisionMap {
         return !n(x, y, z) && !s(x, y, z) && !e(x, y, z) && !w(x, y, z);
     }
 
+    public String getCollisionFlags(WorldPoint point) {
+        int x = point.getX();
+        int y = point.getY();
+        int z = point.getPlane();
+        return "N: " + n(x, y, z) + ", S: " + s(x, y, z) + ", E: " + e(x, y, z) + ", W: " + w(x, y, z);
+    }
+
     public List<Node> getValidNeighbors(Node node, java.util.Map<WorldPoint, java.util.List<Transport>> transports) {
         List<Node> neighbors = new ArrayList<>();
         WorldPoint p = node.getWorldPoint();

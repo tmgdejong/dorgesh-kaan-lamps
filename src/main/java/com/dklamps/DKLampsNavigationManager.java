@@ -1,5 +1,6 @@
 package com.dklamps;
 
+import com.dklamps.enums.Direction;
 import com.dklamps.enums.InventoryState;
 import com.dklamps.enums.Lamp;
 import com.dklamps.enums.LampStatus;
@@ -12,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -47,7 +50,8 @@ public class DKLampsNavigationManager {
         this.pathfindingExecutor = pathfindingExecutor;
     }
 
-    public void update(Map<Lamp, LampStatus> lampStatuses, 
+    public void update(Map<Lamp, LampStatus> lampStatuses,
+                         Map<Lamp, Set<Direction>> lampWallCache,
                          InventoryState inventoryState, 
                          WorldPoint playerLocation, 
                          GameObject wireMachine) {
@@ -85,7 +89,7 @@ public class DKLampsNavigationManager {
 
             case HAS_WORKING_BULBS:
                 currentTargetType = TargetType.LAMP;
-                findClosestBrokenLamp(lampStatuses, playerLocation);
+                findClosestBrokenLamp(lampStatuses, lampWallCache, playerLocation);
                 return;
             default:
                 currentTargetType = TargetType.NONE;
@@ -113,21 +117,22 @@ public class DKLampsNavigationManager {
         }
     }
 
-    private void findClosestBrokenLamp(Map<Lamp, LampStatus> lampStatuses, WorldPoint playerLocation) {
+    private void findClosestBrokenLamp(Map<Lamp, LampStatus> lampStatuses, Map<Lamp, Set<Direction>> lampWallCache, WorldPoint playerLocation) {
         brokenLamps.clear();
         for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet()) {
             if (entry.getValue() == LampStatus.BROKEN) {
                 brokenLamps.add(entry.getKey());
             }
         }
-        final Set<Lamp> allBrokenLamps = brokenLamps;
+        final Set<Lamp> lampsToCheck = new HashSet<>(brokenLamps);
 
-        if (allBrokenLamps.isEmpty()) {
+        if (lampsToCheck.isEmpty()) {
             if (lastLoggedClosestLamp != null) {
                 log.info("No broken lamps found");
                 lastLoggedClosestLamp = null;
             }
             shortestPath.clear();
+            closestDistance = 0;
             return;
         }
 
@@ -142,95 +147,57 @@ public class DKLampsNavigationManager {
         }
 
         final WorldPoint playerPos = playerLocation;
-        final Set<Lamp> lampsToCheck = allBrokenLamps;
 
         currentClosestLampTask = CompletableFuture.runAsync(() -> {
             try {
-                Lamp closestLamp = null;
-                List<WorldPoint> bestPath = null;
-                int shortestPathLength = Integer.MAX_VALUE;
+                final Set<WorldPoint> brokenLampLocations = lampsToCheck.stream()
+                        .map(Lamp::getWorldPoint)
+                        .collect(Collectors.toSet());
 
-                for (Lamp lamp : lampsToCheck) {
-                    if (Thread.currentThread().isInterrupted()) {
-                        return;
-                    }
-
-                    try {
-                        List<WorldPoint> path = pathfinder.findPath(playerPos, lamp.getWorldPoint());
-
-                        if (path != null && !path.isEmpty() && path.size() < shortestPathLength) {
-                            closestLamp = lamp;
-                            bestPath = new ArrayList<>(path);
-                            shortestPathLength = path.size();
-                        }
-                    } catch (Exception e) {
-                        log.debug("Failed to find path to lamp {}: {}", lamp.name(), e.getMessage());
-                        int fallbackDistance = lamp.getWorldPoint().distanceTo(playerPos);
-                        if (lamp.getWorldPoint().getPlane() != playerPos.getPlane()) {
-                            fallbackDistance += 32;
-                        }
-                        if (fallbackDistance < shortestPathLength) {
-                            closestLamp = lamp;
-                            bestPath = new ArrayList<>();
-                            bestPath.add(playerPos);
-                            bestPath.add(lamp.getWorldPoint());
-                            shortestPathLength = fallbackDistance;
-                            log.info("Using fallback path to {} with distance {}", lamp.name(), fallbackDistance);
-                        }
-                    }
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
                 }
 
-                final Lamp finalClosestLamp = closestLamp;
-                final List<WorldPoint> finalPath = bestPath;
-                final int finalDistance = shortestPathLength;
+                log.debug("Calculating closest broken lamp from {} among {}", playerPos, brokenLampLocations);
+                List<WorldPoint> path = pathfinder.findNearestPath(playerPos, brokenLampLocations, lampWallCache);
+                log.debug("Found path to broken lamps: " + path);
 
-                closestDistance = finalDistance;
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
 
-                if (finalClosestLamp == null && !lampsToCheck.isEmpty()) {
-                    Lamp fallbackLamp = lampsToCheck.stream()
-                            .min((l1, l2) -> {
-                                int dist1 = l1.getWorldPoint().distanceTo(playerPos);
-                                int dist2 = l2.getWorldPoint().distanceTo(playerPos);
-                                if (l1.getWorldPoint().getPlane() != playerPos.getPlane())
-                                    dist1 += 32;
-                                if (l2.getWorldPoint().getPlane() != playerPos.getPlane())
-                                    dist2 += 32;
-                                return Integer.compare(dist1, dist2);
-                            })
+                if (path != null && !path.isEmpty()) {
+                    final List<WorldPoint> finalPath = new ArrayList<>(path);
+                    final int finalDistance = finalPath.size();
+                    final WorldPoint destination = finalPath.get(finalPath.size() - 1);
+
+                    final Lamp finalClosestLamp = lampsToCheck.stream()
+                            .filter(lamp -> lamp.getWorldPoint().equals(destination))
+                            .findFirst()
                             .orElse(null);
 
-                    if (fallbackLamp != null) {
-                        List<WorldPoint> fallbackPath = new ArrayList<>();
-                        fallbackPath.add(playerPos);
-                        fallbackPath.add(fallbackLamp.getWorldPoint());
-                        log.info("All pathfinding failed, using direct path fallback to {}", fallbackLamp.name());
+                    shortestPath = finalPath;
+                    closestDistance = finalDistance;
 
-                        final Lamp finalFallbackLamp = fallbackLamp;
-                        final List<WorldPoint> finalFallbackPath = fallbackPath;
-
-                        if (!Thread.currentThread().isInterrupted()) {
-                            shortestPath = finalFallbackPath;
-
-                            if (!finalFallbackLamp.equals(lastLoggedClosestLamp)) {
-                                lastLoggedClosestLamp = finalFallbackLamp;
-                            }
-                        }
-                        return;
-                    }
-                }
-
-                if (!Thread.currentThread().isInterrupted() && finalClosestLamp != null) {
-                    shortestPath = finalPath != null ? finalPath : new ArrayList<>();
-                    if (!finalClosestLamp.equals(lastLoggedClosestLamp)) {
+                    if (finalClosestLamp != null && !finalClosestLamp.equals(lastLoggedClosestLamp)) {
                         lastLoggedClosestLamp = finalClosestLamp;
+                    }
+                } else {
+                    shortestPath.clear();
+                    closestDistance = 0;
+                    if (lastLoggedClosestLamp != null) {
+                        lastLoggedClosestLamp = null;
                     }
                 }
             } catch (Exception e) {
-                log.error("Error during closest lamp calculation", e);
+                log.error("Error during closest lamp calculation (BFS)", e);
+                shortestPath.clear();
+                closestDistance = 0;
+                lastLoggedClosestLamp = null;
             }
         }, pathfindingExecutor).exceptionally(throwable -> {
             if (!(throwable instanceof java.util.concurrent.CancellationException)) {
-                log.error("Closest lamp calculation failed", throwable);
+                log.error("Closest lamp calculation (BFS) failed", throwable);
             }
             return null;
         });

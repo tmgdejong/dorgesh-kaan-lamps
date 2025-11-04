@@ -7,17 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 import com.dklamps.enums.Direction;
 import com.dklamps.enums.Lamp;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Set;
 
-import net.runelite.api.Tile;
-import net.runelite.api.WallObject;
-import net.runelite.api.WorldView;
 import net.runelite.api.coords.WorldPoint;
 
 @Slf4j
@@ -36,6 +36,112 @@ public class Pathfinder {
         for (Transport transport : Transport.values()) {
             transports.computeIfAbsent(transport.getOrigin(), k -> new ArrayList<>()).add(transport);
         }
+    }
+
+    public List<WorldPoint> findNearestPath(WorldPoint start, Set<WorldPoint> targets, Map<Lamp, Set<Direction>> lampWallCache) {
+        if (start == null || targets == null || targets.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        if (targets.contains(start)) {
+            List<WorldPoint> path = new ArrayList<>();
+            path.add(start);
+            return path;
+        }
+
+        Set<WorldPoint> reachableTargets = new HashSet<>();
+        Map<WorldPoint, WorldPoint> adjacentToTargetMap = new HashMap<>();
+
+        for (WorldPoint target : targets) {
+            Lamp targetLamp = getLampFromWorldPoint(target);
+            if (targetLamp == null) continue;
+
+            Set<Direction> walledDirections = lampWallCache.getOrDefault(targetLamp, Collections.emptySet());
+
+            for (Direction direction : Direction.getCardinalDirections()) {
+                if (walledDirections.contains(direction)) {
+                    continue;
+                }
+
+                WorldPoint adjacent = new WorldPoint(target.getX() + direction.getX(), target.getY() + direction.getY(), target.getPlane());
+
+                if (!getNeighbors(new Node(adjacent)).isEmpty()) {
+                    reachableTargets.add(adjacent);
+                    adjacentToTargetMap.put(adjacent, target);
+                }
+            }
+        }
+
+        if (reachableTargets.isEmpty()) {
+            log.debug("Could not find any reachable tiles adjacent to targets.");
+            return new ArrayList<>();
+        }
+
+        Queue<WorldPoint> queue = new ArrayDeque<>();
+        Set<WorldPoint> visited = new HashSet<>();
+        Map<WorldPoint, WorldPoint> parentMap = new HashMap<>();
+
+        queue.add(start);
+        visited.add(start);
+
+        int iterations = 0;
+
+        while (!queue.isEmpty() && iterations < MAX_ITERATIONS) {
+            iterations++;
+            WorldPoint current = queue.poll();
+
+            if (reachableTargets.contains(current)) {
+                return reconstructPath(parentMap, start, current);
+            }
+
+            List<Node> neighborNodes = collisionMap.getValidNeighbors(new Node(current), transports);
+
+            for (Node neighborNode : neighborNodes) {
+                WorldPoint neighborPoint = neighborNode.getWorldPoint();
+
+                if (visited.add(neighborPoint)) {
+                    parentMap.put(neighborPoint, current);
+                    queue.add(neighborPoint);
+                }
+            }
+        }
+
+        if (iterations >= MAX_ITERATIONS) {
+            log.debug("findNearestPath hit MAX_ITERATIONS ({})", MAX_ITERATIONS);
+        }
+
+        return new ArrayList<>();
+    }
+
+    private List<WorldPoint> reconstructPath(Map<WorldPoint, WorldPoint> parentMap, WorldPoint start, WorldPoint end) {
+        List<WorldPoint> path = new ArrayList<>();
+        WorldPoint current = end;
+
+        while (current != null && !current.equals(start)) {
+            path.add(current);
+            current = parentMap.get(current);
+        }
+
+        if (current != null && current.equals(start)) {
+            path.add(start);
+        }
+
+        Collections.reverse(path);
+
+        if (path.isEmpty() || !path.get(0).equals(start)) {
+            return new ArrayList<>();
+        }
+
+        return path;
+    }
+
+    private Lamp getLampFromWorldPoint(WorldPoint worldPoint) {
+        for (Lamp lamp : Lamp.values()) {
+            if (lamp.getWorldPoint().equals(worldPoint)) {
+                return lamp;
+            }
+        }
+        return null;
     }
 
     public List<WorldPoint> findPath(WorldPoint start, WorldPoint end) {
@@ -68,8 +174,6 @@ public class Pathfinder {
         }
         
         boolean crossPlane = start.getPlane() != end.getPlane();
-                
-        Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
         
         Lamp targetLamp = null;
         for (Lamp lamp : Lamp.values()) {
@@ -83,23 +187,13 @@ public class Pathfinder {
         int closestDistance = Integer.MAX_VALUE;
         
         if (!crossPlane) {
-            for (Direction direction : cardinalDirections) {
+            for (Direction direction : Direction.getCardinalDirections()) {
                 // Skip this direction if it's marked as unreachable for this lamp
                 if (targetLamp != null && targetLamp.getUnreachableDirections().contains(direction)) {
                     continue;
                 }
                 
                 WorldPoint nearby = new WorldPoint(end.getX() + direction.getX(), end.getY() + direction.getY(), end.getPlane());
-                WorldView worldView = client.getTopLevelWorldView();
-
-                Tile tile = worldView.getTile(nearby);
-                if (tile != null) {
-                    WallObject wallObject = tile.getWallObject();
-                    if (wallObject != null)
-                    {
-                        continue;
-                    }
-                }
 
                 // Check if this nearby tile is actually walkable by getting its neighbors
                 List<Node> nearbyNeighbors = getNeighbors(new Node(nearby));
