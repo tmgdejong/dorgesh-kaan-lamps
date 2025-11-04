@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 public final class DKLampsConstants {
     private DKLampsConstants() {}
 
+    public static final int NAV_BUTTON_PRIORITY = 7;
+    public static final String CONFIG_GROUP = "dklamps";
     public static final int DORGESHKAAN_LAMPS_VARBIT = 4038;
     public static final int WIRE_RESPAWN_TICKS = 8;
     public static final int INVENTORY_ID = 93;

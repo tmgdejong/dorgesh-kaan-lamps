@@ -27,6 +27,7 @@ import net.runelite.api.events.WallObjectDespawned;
 import net.runelite.api.events.WallObjectSpawned;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.NavigationButton;
@@ -38,7 +39,7 @@ import net.runelite.client.util.ImageUtil;
 @PluginDescriptor(name = "Dorgesh-Kaan Lamps")
 public class DKLampsPlugin extends Plugin {
 
-    @Inject 
+    @Inject
     @Getter
     private Client client;
 
@@ -107,10 +108,13 @@ public class DKLampsPlugin extends Plugin {
         navButton = NavigationButton.builder()
                 .tooltip("Dorgesh-Kaan Lamps")
                 .icon(icon)
-                .priority(7)
+                .priority(DKLampsConstants.NAV_BUTTON_PRIORITY)
                 .panel(panel)
                 .build();
-        clientToolbar.addNavigation(navButton);
+
+        if (config.enableSidePanel()) {
+            clientToolbar.addNavigation(navButton);
+        }
     }
 
     @Override
@@ -131,6 +135,21 @@ public class DKLampsPlugin extends Plugin {
         }
         if (pathfindingExecutor != null) {
             pathfindingExecutor.shutdown();
+        }
+    }
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event) {
+        if (!event.getGroup().equals(DKLampsConstants.CONFIG_GROUP)) {
+            return;
+        }
+
+        if (event.getKey().equals("enableSidePanel")) {
+            if (config.enableSidePanel()) {
+                clientToolbar.addNavigation(navButton);
+            } else {
+                clientToolbar.removeNavigation(navButton);
+            }
         }
     }
 
@@ -168,14 +187,14 @@ public class DKLampsPlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick gameTick) {
         lastTickInstant = Instant.now();
-        
+
         if (client.getLocalPlayer() == null) {
             return;
         }
 
         stateManager.onGameTick();
 
-        if (stateManager.getCurrentArea() == null) { 
+        if (stateManager.getCurrentArea() == null) {
             // Add a simple clear method to the nav manager
             if (navigationManager != null) {
                 navigationManager.clearPathAndTarget();
