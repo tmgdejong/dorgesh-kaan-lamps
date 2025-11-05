@@ -49,7 +49,7 @@ public class TeleportOverlay extends WidgetItemOverlay
 			Color base = config.pathColor();
 
 			long phase = (System.currentTimeMillis() / 600) % 2;
-			int alpha = (phase == 0) ? 192 : 64;
+			int alpha = (phase == 0) ? 64 : 192;
 
 			graphics.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), alpha));
 			graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);

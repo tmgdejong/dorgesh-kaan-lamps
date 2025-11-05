@@ -8,6 +8,7 @@ import java.awt.Polygon;
 import java.awt.Shape;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -220,6 +221,7 @@ public class DKLampsOverlay extends Overlay
 		boolean isUtilityTarget = targetType == TargetType.BANK || targetType == TargetType.WIRING_MACHINE;
 
 		Set<Transport> activeTransports = new HashSet<>();
+		Map<WorldPoint, Color> pathPointColors = new HashMap<>();
 		PathDrawStyle style = config.pathDrawStyle();
 		Point prevScreenPoint = null;
 		boolean isAfterClosedDoor = false;
@@ -250,6 +252,8 @@ public class DKLampsOverlay extends Overlay
 			{
 				pathColor = pathColor.darker().darker();
 			}
+
+			pathPointColors.put(point, pathColor);
 
 			switch (style)
 			{
@@ -306,11 +310,11 @@ public class DKLampsOverlay extends Overlay
 			}
 		}
 
-		highlightTransportsOnPath(graphics, activeTransports, isUtilityTarget, pathRenderedObjects, stairsMap);
+		highlightTransportsOnPath(graphics, activeTransports, pathPointColors, pathRenderedObjects, stairsMap);	
 	}
 
 	private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports,
-			boolean isUtilityTarget, Set<TileObject> pathRenderedObjects, Map<WorldPoint, GameObject> stairsMap)
+			Map<WorldPoint, Color> pathPointColors, Set<TileObject> pathRenderedObjects, Map<WorldPoint, GameObject> stairsMap)
 	{
 
 		if (activeTransports.isEmpty())
@@ -326,26 +330,28 @@ public class DKLampsOverlay extends Overlay
 			}
 
 			WorldPoint stairLocation = stair.getWorldLocation();
-			if (isStairBetweenTransportPoints(stairLocation, activeTransports))
+			Transport transport = transportBetweenTransportPoints(stairLocation, activeTransports);
+			if (transport != null)
 			{
-				renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
-						config.objectsHighlightStyle());
+				Color highlightColor = pathPointColors.get(transport.getOrigin());
+
+				renderTileObject(stair, highlightColor, graphics, config.objectsHighlightStyle());
 				pathRenderedObjects.add(stair);
 			}
 		}
 
 	}
 
-	private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports)
+	private Transport transportBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports)
 	{
 		for (Transport transport : activeTransports)
 		{
 			if (DKLampsHelper.isLocationBetweenTransportPoints(objectLocation, transport))
 			{
-				return true;
+				return transport;
 			}
 		}
-		return false;
+		return null;
 	}
 
 	private void renderWireTimer(Graphics2D graphics)
