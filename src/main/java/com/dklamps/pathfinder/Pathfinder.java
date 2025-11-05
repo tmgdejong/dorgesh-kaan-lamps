@@ -259,7 +259,7 @@ public class Pathfinder
 			}
 			else
 			{
-				System.out.println("DEBUG: No walkable directions found for lamp at " + end);
+				log.debug("DEBUG: No walkable directions found for lamp at " + end);
 				return new ArrayList<>();
 			}
 		}
@@ -440,11 +440,11 @@ public class Pathfinder
 
 		if (iterations >= maxIterations)
 		{
-			System.out.println("DEBUG: Pathfinding hit MAX_ITERATIONS (" + maxIterations + ")");
+			log.debug("DEBUG: Pathfinding hit MAX_ITERATIONS (" + maxIterations + ")");
 		}
 		else
 		{
-			System.out.println("DEBUG: Pathfinding failed - openSet empty after " + iterations + " iterations");
+			log.debug("DEBUG: Pathfinding failed - openSet empty after " + iterations + " iterations");
 		}
 		return new ArrayList<>();
 	}

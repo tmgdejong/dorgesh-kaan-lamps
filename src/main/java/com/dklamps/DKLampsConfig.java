@@ -77,7 +77,7 @@ public interface DKLampsConfig extends Config {
 		name = "Teleport Hint Distance",
 		description = "Show a teleport hint if the path to the closest lamp is longer than this. 0 to disable.",
 		section = pathSection,
-		position = 6
+		position = 5
 	)
 	default int maxPathDistance() 
 	{
