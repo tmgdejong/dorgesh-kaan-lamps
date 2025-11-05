@@ -180,9 +180,7 @@ public class DKLampsNavigationManager
 					return;
 				}
 
-				log.debug("Calculating closest broken lamp from {} among {}", playerPos, brokenLampLocations);
 				List<WorldPoint> path = pathfinder.findNearestPath(playerPos, brokenLampLocations, lampWallCache);
-				log.debug("Found path to broken lamps: " + path);
 
 				if (Thread.currentThread().isInterrupted())
 				{

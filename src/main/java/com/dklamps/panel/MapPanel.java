@@ -23,7 +23,7 @@ import com.dklamps.enums.LampStatus;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.util.ImageUtil;
+// import net.runelite.client.util.ImageUtil;
 
 @Slf4j
 public class MapPanel extends JPanel
@@ -34,14 +34,15 @@ public class MapPanel extends JPanel
 	@Getter
 	private final String title;
 	private final List<Lamp> lampsOnThisFloor;
-	private final BufferedImage mapImage;
+	private final BufferedImage mapImage = null;
 
 	MapPanel(DKLampsPlugin plugin, int plane, String title)
 	{
 		this.plugin = plugin;
 		this.plane = plane;
 		this.title = title;
-		this.mapImage = ImageUtil.loadImageResource(getClass(), "/map_p" + plane + ".png");
+		// Disabled the map images as the file sizes were too large
+		// this.mapImage = ImageUtil.loadImageResource(getClass(), "/map_p" + plane + ".png");
 
 		setLayout(new BorderLayout());
 
@@ -66,20 +67,25 @@ public class MapPanel extends JPanel
 		@Override
 		public Dimension getPreferredSize()
 		{
-			if (mapImage == null)
+			int imageWidth = 1024;
+			int imageHeight = 512;
+
+			if (mapImage != null)
 			{
-				return new Dimension(0, 0);
+				imageWidth = mapImage.getWidth();
+				imageHeight = mapImage.getHeight();
 			}
+
 			int panelHeight = getParent().getHeight();
 			if (panelHeight <= 0)
 			{
 				panelHeight = 200;
 			}
-			double scale = (double) panelHeight / mapImage.getHeight();
+			double scale = (double) panelHeight / imageHeight;
 			int panelWidth = getParent().getWidth();
 			if (panelWidth <= 0)
 			{
-				panelWidth = (int) (mapImage.getWidth() * scale);
+				panelWidth = (int) (imageWidth * scale);
 			}
 			return new Dimension(panelWidth, panelHeight);
 		}
@@ -88,23 +94,31 @@ public class MapPanel extends JPanel
 		protected void paintComponent(Graphics g)
 		{
 			super.paintComponent(g);
-
-			if (mapImage == null)
-				return;
-			g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null);
-
 			Graphics2D g2d = (Graphics2D) g;
 			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-			if (plugin.getClient().getLocalPlayer() != null
-					&& plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() != plane)
+			if (mapImage == null)
 			{
-				g2d.setColor(new Color(0, 0, 0, 50));
+				g.setColor(Color.GRAY);
+				g.fillRect(0, 0, getWidth(), getHeight());
+				g.setColor(Color.WHITE);
+				String text = "Map for " + title;
+				g.drawString(text, (getWidth() - g.getFontMetrics().stringWidth(text)) / 2, getHeight() / 2);
+			}
+			else
+			{
+				g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null);
+			}
+
+			if (plugin.getClient().getLocalPlayer() != null
+				&& plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() != plane)
+			{
+				g2d.setColor(new Color(0, 0, 0, 100));
 				g2d.fillRect(0, 0, getWidth(), getHeight());
 			}
 
 			if (plugin.getClient().getLocalPlayer() != null
-					&& plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() == plane)
+				&& plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() == plane)
 			{
 				g.setColor(Color.WHITE);
 				g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
@@ -120,9 +134,9 @@ public class MapPanel extends JPanel
 					color = plugin.getConfig().getBrokenLampColor();
 				}
 				else if (status == LampStatus.WORKING
-						&& ((plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.ALL_FLOORS)
-								|| (plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.CURRENT_FLOOR
-										&& lamp.getWorldPoint().getPlane() == plane)))
+					&& ((plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.ALL_FLOORS)
+					|| (plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.CURRENT_FLOOR
+					&& lamp.getWorldPoint().getPlane() == plane)))
 				{
 					color = plugin.getConfig().getWorkingLampColor();
 				}
@@ -142,7 +156,7 @@ public class MapPanel extends JPanel
 			}
 
 			if (plugin.getClient().getLocalPlayer() != null
-					&& plugin.getConfig().displayPlayerInPanel() != DisplayFloorType.NONE)
+				&& plugin.getConfig().displayPlayerInPanel() != DisplayFloorType.NONE)
 			{
 				WorldPoint playerLocation = plugin.getClient().getLocalPlayer().getWorldLocation();
 				drawPlayerDot(g2d, playerLocation);
