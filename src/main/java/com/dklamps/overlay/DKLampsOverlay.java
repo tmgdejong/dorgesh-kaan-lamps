@@ -42,308 +42,372 @@ import net.runelite.client.ui.overlay.components.ProgressPieComponent;
 import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
 @Slf4j
-public class DKLampsOverlay extends Overlay {
+public class DKLampsOverlay extends Overlay
+{
 
-    private final Client client;
-    private final DKLampsPlugin plugin;
-    private final DKLampsConfig config;
-    private final ModelOutlineRenderer modelOutlineRenderer;
+	private final Client client;
+	private final DKLampsPlugin plugin;
+	private final DKLampsConfig config;
+	private final ModelOutlineRenderer modelOutlineRenderer;
 
-    @Inject
-    private DKLampsOverlay(Client client, DKLampsPlugin plugin, DKLampsConfig config,
-            ModelOutlineRenderer modelOutlineRenderer) {
-        this.client = client;
-        this.plugin = plugin;
-        this.config = config;
-        this.modelOutlineRenderer = modelOutlineRenderer;
-        setPosition(OverlayPosition.DYNAMIC);
-        setLayer(OverlayLayer.ABOVE_SCENE);
-    }
+	@Inject
+	private DKLampsOverlay(Client client, DKLampsPlugin plugin, DKLampsConfig config,
+			ModelOutlineRenderer modelOutlineRenderer)
+	{
+		this.client = client;
+		this.plugin = plugin;
+		this.config = config;
+		this.modelOutlineRenderer = modelOutlineRenderer;
+		setPosition(OverlayPosition.DYNAMIC);
+		setLayer(OverlayLayer.ABOVE_SCENE);
+	}
 
-    @Override
-    public Dimension render(Graphics2D graphics) {
-        if (client.getLocalPlayer() == null) {
-            return null;
-        }
+	@Override
+	public Dimension render(Graphics2D graphics)
+	{
+		if (client.getLocalPlayer() == null)
+		{
+			return null;
+		}
 
-        Set<WorldPoint> pathPoints = new HashSet<>(plugin.getNavigationManager().getShortestPath());
+		Set<WorldPoint> pathPoints = new HashSet<>(plugin.getNavigationManager().getShortestPath());
 
-        Map<WorldPoint, WallObject> doorsMap = plugin.getStateManager().getSpawnedDoors();
-        Map<WorldPoint, GameObject> stairsMap = plugin.getStateManager().getSpawnedStairs();
+		Map<WorldPoint, WallObject> doorsMap = plugin.getStateManager().getSpawnedDoors();
+		Map<WorldPoint, GameObject> stairsMap = plugin.getStateManager().getSpawnedStairs();
 
-        Set<TileObject> pathRenderedObjects = new HashSet<>();
+		Set<TileObject> pathRenderedObjects = new HashSet<>();
 
-        renderLamps(graphics);
+		renderLamps(graphics);
 
-        drawPathToLocation(graphics, pathPoints, pathRenderedObjects, doorsMap, stairsMap);
+		drawPathToLocation(graphics, pathPoints, pathRenderedObjects, doorsMap, stairsMap);
 
-        if (config.highlightClosedDoors()) {
-            for (WallObject door : doorsMap.values()) {
-                if (door.getPlane() != client.getTopLevelWorldView().getPlane()) {
-                    continue;
-                }
-                if (!pathRenderedObjects.contains(door)) {
-                    renderTileObject(door, config.doorHighlightColor(), graphics, config.objectsHighlightStyle());
-                }
-            }
-        }
+		if (config.highlightClosedDoors())
+		{
+			for (WallObject door : doorsMap.values())
+			{
+				if (door.getPlane() != client.getTopLevelWorldView().getPlane())
+				{
+					continue;
+				}
+				if (!pathRenderedObjects.contains(door))
+				{
+					renderTileObject(door, config.doorHighlightColor(), graphics, config.objectsHighlightStyle());
+				}
+			}
+		}
 
-        if (config.highlightInformativeStairs()) {
-            for (GameObject stair : plugin.getStateManager().getInformativeStairs()) {
-                if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
-                    continue;
-                }
-                if (!pathRenderedObjects.contains(stair)) {
-                    renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
-                }
-            }
-        }
+		if (config.highlightInformativeStairs())
+		{
+			for (GameObject stair : plugin.getStateManager().getInformativeStairs())
+			{
+				if (stair.getPlane() != client.getTopLevelWorldView().getPlane())
+				{
+					continue;
+				}
+				if (!pathRenderedObjects.contains(stair))
+				{
+					renderTileObject(stair, config.informativeStairColor(), graphics, config.objectsHighlightStyle());
+				}
+			}
+		}
 
-        if (config.highlightWireMachine() && plugin.getStateManager().getWireMachine() != null) {
-            GameObject wireMachine = plugin.getStateManager().getWireMachine();
-            if (wireMachine.getId() == DKLampsConstants.WIRE_MACHINE_ACTIVE) {
-                renderTileObject(wireMachine, config.wireMachineHighlightColor(), graphics,
-                        config.objectsHighlightStyle());
-            } else {
-                renderWireTimer(graphics);
-            }
-        }
+		if (config.highlightWireMachine() && plugin.getStateManager().getWireMachine() != null)
+		{
+			GameObject wireMachine = plugin.getStateManager().getWireMachine();
+			if (wireMachine.getId() == DKLampsConstants.WIRE_MACHINE_ACTIVE)
+			{
+				renderTileObject(wireMachine, config.wireMachineHighlightColor(), graphics,
+						config.objectsHighlightStyle());
+			}
+			else
+			{
+				renderWireTimer(graphics);
+			}
+		}
 
-        return null;
-    }
+		return null;
+	}
 
-    private void renderLamps(Graphics2D graphics) {
-        for (GameObject lampObject : plugin.getStateManager().getSpawnedLamps().values()) {
-            if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane()
-                    && !config.highlightOtherPlanesLamps()) {
-                continue;
-            }
+	private void renderLamps(Graphics2D graphics)
+	{
+		for (GameObject lampObject : plugin.getStateManager().getSpawnedLamps().values())
+		{
+			if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane()
+					&& !config.highlightOtherPlanesLamps())
+			{
+				continue;
+			}
 
-            Lamp lamp = DKLampsHelper.getLamp(lampObject.getId());
-            if (lamp == null) {
-                continue;
-            }
+			Lamp lamp = DKLampsHelper.getLamp(lampObject.getId());
+			if (lamp == null)
+			{
+				continue;
+			}
 
-            LampStatus status = plugin.getStateManager().getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
+			LampStatus status = plugin.getStateManager().getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
 
-            Color color;
-            if (status == LampStatus.BROKEN && config.highlightBrokenLamps()) {
-                color = config.getBrokenLampColor();
-            } else if (status == LampStatus.WORKING && config.highlightWorkingLamps()) {
-                color = config.getWorkingLampColor();
-            } else if (config.highlightAllLamps()) {
-                color = config.getDefaultLampColor();
-            } else {
-                continue;
-            }
+			Color color;
+			if (status == LampStatus.BROKEN && config.highlightBrokenLamps())
+			{
+				color = config.getBrokenLampColor();
+			}
+			else if (status == LampStatus.WORKING && config.highlightWorkingLamps())
+			{
+				color = config.getWorkingLampColor();
+			}
+			else if (config.highlightAllLamps())
+			{
+				color = config.getDefaultLampColor();
+			}
+			else
+			{
+				continue;
+			}
 
-            if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane() && config.darkenOtherPlanesLamps()) {
-                color = color.darker();
-            }
+			if (lampObject.getPlane() != client.getTopLevelWorldView().getPlane() && config.darkenOtherPlanesLamps())
+			{
+				color = color.darker();
+			}
 
-            renderTileObject(lampObject, color, graphics, config.lampsHighlightStyle());
-        }
-    }
+			renderTileObject(lampObject, color, graphics, config.lampsHighlightStyle());
+		}
+	}
 
-    private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics, HighlightType style) {
-        switch (style) {
-            case BORDER:
-                modelOutlineRenderer.drawOutline(tileObject, config.borderThickness(), color, config.borderFeather());
-                break;
-            case CLICKBOX:
-                Shape clickbox = tileObject.getClickbox();
-                if (clickbox != null) {
-                    Point mousePosition = client.getMouseCanvasPosition();
-                    if (clickbox.contains(mousePosition.getX(), mousePosition.getY())) {
-                        graphics.setColor(color.darker());
-                    } else {
-                        graphics.setColor(color);
-                    }
-                    graphics.draw(clickbox);
-                    graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 50));
-                    graphics.fill(clickbox);
-                }
-                break;
-        }
-    }
+	private void renderTileObject(TileObject tileObject, Color color, Graphics2D graphics, HighlightType style)
+	{
+		switch (style)
+		{
+		case BORDER:
+			modelOutlineRenderer.drawOutline(tileObject, config.borderThickness(), color, config.borderFeather());
+			break;
+		case CLICKBOX:
+			Shape clickbox = tileObject.getClickbox();
+			if (clickbox != null)
+			{
+				Point mousePosition = client.getMouseCanvasPosition();
+				if (clickbox.contains(mousePosition.getX(), mousePosition.getY()))
+				{
+					graphics.setColor(color.darker());
+				}
+				else
+				{
+					graphics.setColor(color);
+				}
+				graphics.draw(clickbox);
+				graphics.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 50));
+				graphics.fill(clickbox);
+			}
+			break;
+		}
+	}
 
-    private void drawPathToLocation(Graphics2D graphics, Set<WorldPoint> pathPoints, Set<TileObject> pathRenderedObjects,
-            Map<WorldPoint, WallObject> doorsMap, Map<WorldPoint, GameObject> stairsMap) {
-        if (!config.showPathToLocation()) {
-            return;
-        }
+	private void drawPathToLocation(Graphics2D graphics, Set<WorldPoint> pathPoints,
+			Set<TileObject> pathRenderedObjects, Map<WorldPoint, WallObject> doorsMap,
+			Map<WorldPoint, GameObject> stairsMap)
+	{
+		if (!config.showPathToLocation())
+		{
+			return;
+		}
 
-        List<WorldPoint> path = plugin.getNavigationManager().getShortestPath();
-        if (path == null || path.isEmpty()) {
-            return;
-        }
+		List<WorldPoint> path = plugin.getNavigationManager().getShortestPath();
+		if (path == null || path.isEmpty())
+		{
+			return;
+		}
 
-        TargetType targetType = plugin.getNavigationManager().getCurrentTargetType();
-        boolean isUtilityTarget = targetType == TargetType.BANK || targetType == TargetType.WIRING_MACHINE;
+		TargetType targetType = plugin.getNavigationManager().getCurrentTargetType();
+		boolean isUtilityTarget = targetType == TargetType.BANK || targetType == TargetType.WIRING_MACHINE;
 
-        if (!isUtilityTarget && config.maxPathDistance() > 0 && path.size() > config.maxPathDistance()) {
-            return;
-        }
+		Set<Transport> activeTransports = new HashSet<>();
+		PathDrawStyle style = config.pathDrawStyle();
+		Point prevScreenPoint = null;
+		boolean isAfterClosedDoor = false;
 
-        if (targetType == TargetType.BANK
-                && DKLampsConstants.BANK_TILES.contains(client.getLocalPlayer().getWorldLocation())) {
-            return;
-        }
+		for (WorldPoint point : path)
+		{
+			if (point.getPlane() != client.getTopLevelWorldView().getPlane())
+			{
+				prevScreenPoint = null;
+				continue;
+			}
 
-        Set<Transport> activeTransports = new HashSet<>();
-        PathDrawStyle style = config.pathDrawStyle();
-        Point prevScreenPoint = null;
-        boolean isAfterClosedDoor = false;
+			LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), point);
+			if (localPoint == null)
+			{
+				prevScreenPoint = null;
+				continue;
+			}
 
-        for (WorldPoint point : path) {
-            if (point.getPlane() != client.getTopLevelWorldView().getPlane()) {
-                prevScreenPoint = null;
-                continue;
-            }
+			Color pathColor = isUtilityTarget ? config.utilityPathColor() : config.pathColor();
+			if (!isUtilityTarget && config.maxPathDistance() > 0 && path.size() > config.maxPathDistance())
+			{
+				long phase = (System.currentTimeMillis() / 600) % 2;
+				pathColor = phase == 0 ? pathColor.darker() : pathColor.brighter();
+			}
 
-            LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), point);
-            if (localPoint == null) {
-                prevScreenPoint = null;
-                continue;
-            }
+			if (isAfterClosedDoor)
+			{
+				pathColor = pathColor.darker().darker();
+			}
 
-            Color pathColor = isUtilityTarget ? config.utilityPathColor() : config.pathColor();
-            if (isAfterClosedDoor) {
-                pathColor = pathColor.darker().darker();
-            }
+			switch (style)
+			{
+			case TILES:
+				Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
+				if (poly != null)
+				{
+					OverlayUtil.renderPolygon(graphics, poly, pathColor);
+				}
+				break;
 
-            switch (style) {
-                case TILES:
-                    Polygon poly = Perspective.getCanvasTilePoly(client, localPoint);
-                    if (poly != null) {
-                        OverlayUtil.renderPolygon(graphics, poly, pathColor);
-                    }
-                    break;
+			case TILE_BORDERS:
+				Polygon borderPoly = Perspective.getCanvasTilePoly(client, localPoint);
+				if (borderPoly != null)
+				{
+					graphics.setColor(pathColor);
+					graphics.draw(borderPoly);
+				}
+				break;
 
-                case TILE_BORDERS:
-                    Polygon borderPoly = Perspective.getCanvasTilePoly(client, localPoint);
-                    if (borderPoly != null) {
-                        graphics.setColor(pathColor);
-                        graphics.draw(borderPoly);
-                    }
-                    break;
+			case CENTER_LINE:
+				Point screenPoint = Perspective.localToCanvas(client, localPoint,
+						client.getTopLevelWorldView().getPlane());
+				if (screenPoint == null)
+				{
+					continue;
+				}
+				if (prevScreenPoint != null)
+				{
+					graphics.setColor(pathColor);
+					graphics.setStroke(new BasicStroke(2));
+					graphics.drawLine(prevScreenPoint.getX(), prevScreenPoint.getY(), screenPoint.getX(),
+							screenPoint.getY());
+				}
+				prevScreenPoint = screenPoint;
+				break;
+			}
 
-                case CENTER_LINE:
-                    Point screenPoint = Perspective.localToCanvas(client, localPoint,
-                            client.getTopLevelWorldView().getPlane());
-                    if (screenPoint == null) {
-                        continue;
-                    }
-                    if (prevScreenPoint != null) {
-                        graphics.setColor(pathColor);
-                        graphics.setStroke(new BasicStroke(2));
-                        graphics.drawLine(prevScreenPoint.getX(), prevScreenPoint.getY(), screenPoint.getX(),
-                                screenPoint.getY());
-                    }
-                    prevScreenPoint = screenPoint;
-                    break;
-            }
+			WallObject door = doorsMap.get(point);
+			if (door != null)
+			{
+				renderTileObject(door, pathColor, graphics, config.objectsHighlightStyle());
+				pathRenderedObjects.add(door);
+				isAfterClosedDoor = true;
+			}
 
-            WallObject door = doorsMap.get(point);
-            if (door != null) {
-                renderTileObject(door, pathColor, graphics, config.objectsHighlightStyle());
-                pathRenderedObjects.add(door);
-                isAfterClosedDoor = true;
-            }
+			List<Transport> transports = plugin.getPathfinder().getTransportsAt(point);
+			for (Transport transport : transports)
+			{
+				if (pathPoints.contains(transport.getOrigin()) && pathPoints.contains(transport.getDestination()))
+				{
+					activeTransports.add(transport);
+				}
+			}
+		}
 
-            List<Transport> transports = plugin.getPathfinder().getTransportsAt(point);
-            for (Transport transport : transports) {
-                if (pathPoints.contains(transport.getOrigin()) && pathPoints.contains(transport.getDestination())) {
-                    activeTransports.add(transport);
-                }
-            }
-        }
+		highlightTransportsOnPath(graphics, activeTransports, isUtilityTarget, pathRenderedObjects, stairsMap);
+	}
 
-        highlightTransportsOnPath(graphics, activeTransports, isUtilityTarget, pathRenderedObjects, stairsMap);
-    }
+	private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports,
+			boolean isUtilityTarget, Set<TileObject> pathRenderedObjects, Map<WorldPoint, GameObject> stairsMap)
+	{
 
-    private void highlightTransportsOnPath(Graphics2D graphics, Set<Transport> activeTransports,
-            boolean isUtilityTarget, Set<TileObject> pathRenderedObjects, Map<WorldPoint, GameObject> stairsMap) {
+		if (activeTransports.isEmpty())
+		{
+			return;
+		}
 
-        if (activeTransports.isEmpty()) {
-            return;
-        }
+		for (GameObject stair : stairsMap.values())
+		{
+			if (stair.getPlane() != client.getTopLevelWorldView().getPlane())
+			{
+				continue;
+			}
 
-        for (GameObject stair : stairsMap.values()) {
-            if (stair.getPlane() != client.getTopLevelWorldView().getPlane()) {
-                continue;
-            }
+			WorldPoint stairLocation = stair.getWorldLocation();
+			if (isStairBetweenTransportPoints(stairLocation, activeTransports))
+			{
+				renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
+						config.objectsHighlightStyle());
+				pathRenderedObjects.add(stair);
+			}
+		}
 
-            WorldPoint stairLocation = stair.getWorldLocation();
-            if (isStairBetweenTransportPoints(stairLocation, activeTransports)) {
-                renderTileObject(stair, isUtilityTarget ? config.utilityPathColor() : config.pathColor(), graphics,
-                        config.objectsHighlightStyle());
-                pathRenderedObjects.add(stair);
-            }
-        }
+	}
 
-    }
+	private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports)
+	{
+		for (Transport transport : activeTransports)
+		{
+			if (DKLampsHelper.isLocationBetweenTransportPoints(objectLocation, transport))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
-    private boolean isStairBetweenTransportPoints(WorldPoint objectLocation, Set<Transport> activeTransports) {
-        for (Transport transport : activeTransports) {
-            if (DKLampsHelper.isLocationBetweenTransportPoints(objectLocation, transport)) {
-                return true;
-            }
-        }
-        return false;
-    }
+	private void renderWireTimer(Graphics2D graphics)
+	{
+		int respawnTick = plugin.getStateManager().getWireRespawnTick();
 
-    private void renderWireTimer(Graphics2D graphics) {
-        int respawnTick = plugin.getStateManager().getWireRespawnTick();
+		if (respawnTick == -1 || plugin.getStateManager().getWireMachine() == null)
+		{
+			return;
+		}
 
-        if (respawnTick == -1 || plugin.getStateManager().getWireMachine() == null) {
-            return;
-        }
+		int currentTick = client.getTickCount();
+		int ticksRemaining = respawnTick - currentTick;
 
-        int currentTick = client.getTickCount();
-        int ticksRemaining = respawnTick - currentTick;
+		Instant now = Instant.now();
+		Instant lastTick = plugin.getLastTickInstant();
+		long millisSinceLastTick = Duration.between(lastTick, now).toMillis();
 
-        Instant now = Instant.now();
-        Instant lastTick = plugin.getLastTickInstant();
-        long millisSinceLastTick = Duration.between(lastTick, now).toMillis();
+		millisSinceLastTick = Math.max(0, Math.min(millisSinceLastTick, 600));
 
-        millisSinceLastTick = Math.max(0, Math.min(millisSinceLastTick, 600));
+		double tickFractionPassed = millisSinceLastTick / 600.0;
 
-        double tickFractionPassed = millisSinceLastTick / 600.0;
+		double smoothTicksRemaining = Math.max(0.0, (double) ticksRemaining - tickFractionPassed);
 
-        double smoothTicksRemaining = Math.max(0.0, (double) ticksRemaining - tickFractionPassed);
+		if (smoothTicksRemaining <= 0)
+		{
+			return;
+		}
 
-        if (smoothTicksRemaining <= 0) {
-            return;
-        }
+		double progress = smoothTicksRemaining / DKLampsConstants.WIRE_RESPAWN_TICKS;
 
-        double progress = smoothTicksRemaining / DKLampsConstants.WIRE_RESPAWN_TICKS;
+		LocalPoint lp = plugin.getStateManager().getWireMachine().getLocalLocation();
+		Point point = net.runelite.api.Perspective.getCanvasTextLocation(client, graphics, lp, " ", 0);
 
-        LocalPoint lp = plugin.getStateManager().getWireMachine().getLocalLocation();
-        Point point = net.runelite.api.Perspective.getCanvasTextLocation(client, graphics, lp, " ", 0);
+		if (point == null)
+		{
+			return;
+		}
 
-        if (point == null) {
-            return;
-        }
-
-        if (config.timerType() == TimerType.PIE) {
-            ProgressPieComponent pie = new ProgressPieComponent();
-            pie.setPosition(point);
-            pie.setBorderColor(config.wireMachineHighlightColor());
-            pie.setDiameter(20);
-            pie.setFill(config.wireMachineHighlightColor());
-            // Use the smooth progress value
-            pie.setProgress(progress);
-            pie.render(graphics);
-        } else if (config.timerType() == TimerType.TICKS) {
-            // Ticks should still likely show the discrete value
-            String text = String.valueOf(ticksRemaining);
-            OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
-        } else if (config.timerType() == TimerType.SECONDS) {
-            // Calculate seconds based on the smooth value
-            double seconds = smoothTicksRemaining * 0.6;
-            String text = String.format("%.1f", seconds);
-            OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
-        }
-    }
+		if (config.timerType() == TimerType.PIE)
+		{
+			ProgressPieComponent pie = new ProgressPieComponent();
+			pie.setPosition(point);
+			pie.setBorderColor(config.wireMachineHighlightColor());
+			pie.setDiameter(20);
+			pie.setFill(config.wireMachineHighlightColor());
+			// Use the smooth progress value
+			pie.setProgress(progress);
+			pie.render(graphics);
+		}
+		else if (config.timerType() == TimerType.TICKS)
+		{
+			// Ticks should still likely show the discrete value
+			String text = String.valueOf(ticksRemaining);
+			OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
+		}
+		else if (config.timerType() == TimerType.SECONDS)
+		{
+			// Calculate seconds based on the smooth value
+			double seconds = smoothTicksRemaining * 0.6;
+			String text = String.format("%.1f", seconds);
+			OverlayUtil.renderTextLocation(graphics, point, text, Color.WHITE);
+		}
+	}
 }

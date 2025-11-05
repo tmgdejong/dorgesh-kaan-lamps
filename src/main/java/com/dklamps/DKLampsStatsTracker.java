@@ -10,64 +10,79 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 
 @Slf4j
-public class DKLampsStatsTracker {
+public class DKLampsStatsTracker
+{
 
-    @Getter
-    private int lampsFixed = 0;
-    @Getter
-    private int lampsPerHr = 0;
-    @Getter
-    private int totalLampsFixed = 0;
-    
-    private Instant start;
+	@Getter
+	private int lampsFixed = 0;
+	@Getter
+	private int lampsPerHr = 0;
+	@Getter
+	private int totalLampsFixed = 0;
 
-    public DKLampsStatsTracker() {}
+	private Instant start;
 
-    public void incrementLampsFixed() {
-        ++lampsFixed;
+	public DKLampsStatsTracker()
+	{
+	}
 
-        if (start == null) {
-            start = Instant.now();
-        }
+	public void incrementLampsFixed()
+	{
+		++lampsFixed;
 
-        Duration elapsed = Duration.between(start, Instant.now());
-        long elapsedMs = elapsed.toMillis();
+		if (start == null)
+		{
+			start = Instant.now();
+		}
 
-        if (lampsFixed >= 3 && elapsedMs > 0) {
-            lampsPerHr = (int) ((double) lampsFixed * Duration.ofHours(1).toMillis() / elapsedMs);
-        }
-    }
+		Duration elapsed = Duration.between(start, Instant.now());
+		long elapsedMs = elapsed.toMillis();
 
-    public void onChatMessage(ChatMessage chatMessage) {
-        ChatMessageType chatMessageType = chatMessage.getType();
-        String message = chatMessage.getMessage();
+		if (lampsFixed >= 3 && elapsedMs > 0)
+		{
+			lampsPerHr = (int) ((double) lampsFixed * Duration.ofHours(1).toMillis() / elapsedMs);
+		}
+	}
 
-        if (chatMessageType == ChatMessageType.SPAM
-                && message.contains(DKLampsConstants.TOTAL_LAMPS_FIXED_CHAT_MESSAGE)) {
-            updateTotalLampsFixed(message);
-        }
-    }
+	public void onChatMessage(ChatMessage chatMessage)
+	{
+		ChatMessageType chatMessageType = chatMessage.getType();
+		String message = chatMessage.getMessage();
 
-    public void updateTotalLampsFixed(String message) {
-        Matcher matcher = DKLampsConstants.TOTAL_LAMPS_PATTERN.matcher(message);
+		if (chatMessageType == ChatMessageType.SPAM
+				&& message.contains(DKLampsConstants.TOTAL_LAMPS_FIXED_CHAT_MESSAGE))
+		{
+			updateTotalLampsFixed(message);
+		}
+	}
 
-        if (matcher.find()) {
-            try {
-                String numberStr = matcher.group(1).replace(",", "");
-                int number = Integer.parseInt(numberStr);
+	public void updateTotalLampsFixed(String message)
+	{
+		Matcher matcher = DKLampsConstants.TOTAL_LAMPS_PATTERN.matcher(message);
 
-                if (number > 0 && number > this.totalLampsFixed) {
-                    this.totalLampsFixed = number;
-                }
-            } catch (NumberFormatException e) {
-                log.warn("Failed to parse number from chat message: {}", matcher.group(1));
-            }
-        }
-    }
+		if (matcher.find())
+		{
+			try
+			{
+				String numberStr = matcher.group(1).replace(",", "");
+				int number = Integer.parseInt(numberStr);
 
-    public void resetSession() {
-        lampsFixed = 0;
-        lampsPerHr = 0;
-        start = null;
-    }
+				if (number > 0 && number > this.totalLampsFixed)
+				{
+					this.totalLampsFixed = number;
+				}
+			}
+			catch (NumberFormatException e)
+			{
+				log.warn("Failed to parse number from chat message: {}", matcher.group(1));
+			}
+		}
+	}
+
+	public void resetSession()
+	{
+		lampsFixed = 0;
+		lampsPerHr = 0;
+		start = null;
+	}
 }

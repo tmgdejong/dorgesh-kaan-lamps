@@ -22,239 +22,285 @@ import net.runelite.api.GameObject;
 import net.runelite.api.coords.WorldPoint;
 
 @Slf4j
-public class DKLampsNavigationManager {
+public class DKLampsNavigationManager
+{
 
-    private final Client client;
-    private final DKLampsConfig config;
-    private final Pathfinder pathfinder;
-    private final ExecutorService pathfindingExecutor;
+	private final Client client;
+	private final DKLampsConfig config;
+	private final Pathfinder pathfinder;
+	private final ExecutorService pathfindingExecutor;
 
-    @Getter
-    private List<WorldPoint> shortestPath = new ArrayList<>();
-    @Getter
-    private int closestDistance = 0;
-    @Getter
-    private TargetType currentTargetType = TargetType.NONE;
-    
-    private Lamp lastLoggedClosestLamp = null;
-    private CompletableFuture<Void> currentClosestLampTask;
-    private long lastClosestLampCalculation = 0;
-    private static final long CLOSEST_LAMP_COOLDOWN_MS = 600;
-    
-    private final Set<Lamp> brokenLamps = new HashSet<>();
+	@Getter
+	private List<WorldPoint> shortestPath = new ArrayList<>();
+	@Getter
+	private int closestDistance = 0;
+	@Getter
+	private TargetType currentTargetType = TargetType.NONE;
 
-    public DKLampsNavigationManager(Client client, DKLampsConfig config, Pathfinder pathfinder, ExecutorService pathfindingExecutor) {
-        this.client = client;
-        this.config = config;
-        this.pathfinder = pathfinder;
-        this.pathfindingExecutor = pathfindingExecutor;
-    }
+	private Lamp lastLoggedClosestLamp = null;
+	private CompletableFuture<Void> currentClosestLampTask;
+	private long lastClosestLampCalculation = 0;
+	private static final long CLOSEST_LAMP_COOLDOWN_MS = 600;
 
-    public void update(Map<Lamp, LampStatus> lampStatuses,
-                         Map<Lamp, Set<Direction>> lampWallCache,
-                         InventoryState inventoryState, 
-                         WorldPoint playerLocation, 
-                         GameObject wireMachine) {
+	private final Set<Lamp> brokenLamps = new HashSet<>();
 
-        if (!config.showPathToLocation()) {
-            if (!shortestPath.isEmpty()) {
-                shortestPath.clear();
-            }
-            if (currentTargetType != TargetType.NONE) {
-                 currentTargetType = TargetType.NONE;
-                 closestDistance = 0;
-            }
-            if (currentClosestLampTask != null && !currentClosestLampTask.isDone()) {
-                currentClosestLampTask.cancel(true);
-            }
-            return;
-        }
+	public DKLampsNavigationManager(Client client, DKLampsConfig config, Pathfinder pathfinder,
+			ExecutorService pathfindingExecutor)
+	{
+		this.client = client;
+		this.config = config;
+		this.pathfinder = pathfinder;
+		this.pathfindingExecutor = pathfindingExecutor;
+	}
 
-        if (playerLocation == null || pathfinder == null || pathfindingExecutor == null) {
-            return;
-        }
+	public void update(Map<Lamp, LampStatus> lampStatuses, Map<Lamp, Set<Direction>> lampWallCache,
+			InventoryState inventoryState, WorldPoint playerLocation, GameObject wireMachine)
+	{
 
-        WorldPoint targetLocation = null;
+		if (!config.showPathToLocation())
+		{
+			if (!shortestPath.isEmpty())
+			{
+				shortestPath.clear();
+			}
+			if (currentTargetType != TargetType.NONE)
+			{
+				currentTargetType = TargetType.NONE;
+				closestDistance = 0;
+			}
+			if (currentClosestLampTask != null && !currentClosestLampTask.isDone())
+			{
+				currentClosestLampTask.cancel(true);
+			}
+			return;
+		}
 
-        switch (inventoryState) {
-            case NO_LIGHT_BULBS:
-                targetLocation = DKLampsConstants.BANK_LOCATION;
-                currentTargetType = TargetType.BANK;
-                break;
+		if (playerLocation == null || pathfinder == null || pathfindingExecutor == null)
+		{
+			return;
+		}
 
-            case ONLY_EMPTY_BULBS:
-                targetLocation = DKLampsConstants.WIRE_MACHINE_LOCATION;
-                currentTargetType = TargetType.WIRING_MACHINE;
-                break;
+		WorldPoint targetLocation = null;
 
-            case HAS_WORKING_BULBS:
-                currentTargetType = TargetType.LAMP;
-                findClosestBrokenLamp(lampStatuses, lampWallCache, playerLocation);
-                return;
-            default:
-                currentTargetType = TargetType.NONE;
-                shortestPath.clear();
-                return;
-        }
+		switch (inventoryState)
+		{
+		case NO_LIGHT_BULBS:
+			targetLocation = DKLampsConstants.BANK_LOCATION;
+			currentTargetType = TargetType.BANK;
+			break;
 
-        if (targetLocation != null) {
-            calculatePathToTarget(targetLocation, currentTargetType, playerLocation);
-        }
-    }
+		case ONLY_EMPTY_BULBS:
+			targetLocation = DKLampsConstants.WIRE_MACHINE_LOCATION;
+			currentTargetType = TargetType.WIRING_MACHINE;
+			break;
 
-    public void shutDown() {
-        if (currentClosestLampTask != null) {
-            currentClosestLampTask.cancel(true);
-        }
-    }
+		case HAS_WORKING_BULBS:
+			currentTargetType = TargetType.LAMP;
+			findClosestBrokenLamp(lampStatuses, lampWallCache, playerLocation);
+			return;
+		default:
+			currentTargetType = TargetType.NONE;
+			shortestPath.clear();
+			return;
+		}
 
-    public void clearPathAndTarget() {
-        shortestPath.clear();
-        closestDistance = 0;
-        currentTargetType = TargetType.NONE;
-        if (currentClosestLampTask != null && !currentClosestLampTask.isDone()) {
-            currentClosestLampTask.cancel(true);
-        }
-    }
+		if (targetLocation != null)
+		{
+			calculatePathToTarget(targetLocation, currentTargetType, playerLocation);
+		}
+	}
 
-    private void findClosestBrokenLamp(Map<Lamp, LampStatus> lampStatuses, Map<Lamp, Set<Direction>> lampWallCache, WorldPoint playerLocation) {
-        brokenLamps.clear();
-        for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet()) {
-            if (entry.getValue() == LampStatus.BROKEN) {
-                brokenLamps.add(entry.getKey());
-            }
-        }
-        final Set<Lamp> lampsToCheck = new HashSet<>(brokenLamps);
+	public void shutDown()
+	{
+		if (currentClosestLampTask != null)
+		{
+			currentClosestLampTask.cancel(true);
+		}
+	}
 
-        if (lampsToCheck.isEmpty()) {
-            if (lastLoggedClosestLamp != null) {
-                log.info("No broken lamps found");
-                lastLoggedClosestLamp = null;
-            }
-            shortestPath.clear();
-            closestDistance = 0;
-            return;
-        }
+	public void clearPathAndTarget()
+	{
+		shortestPath.clear();
+		closestDistance = 0;
+		currentTargetType = TargetType.NONE;
+		if (currentClosestLampTask != null && !currentClosestLampTask.isDone())
+		{
+			currentClosestLampTask.cancel(true);
+		}
+	}
 
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastClosestLampCalculation < CLOSEST_LAMP_COOLDOWN_MS) {
-            return;
-        }
-        lastClosestLampCalculation = currentTime;
+	private void findClosestBrokenLamp(Map<Lamp, LampStatus> lampStatuses, Map<Lamp, Set<Direction>> lampWallCache,
+			WorldPoint playerLocation)
+	{
+		brokenLamps.clear();
+		for (Map.Entry<Lamp, LampStatus> entry : lampStatuses.entrySet())
+		{
+			if (entry.getValue() == LampStatus.BROKEN)
+			{
+				brokenLamps.add(entry.getKey());
+			}
+		}
+		final Set<Lamp> lampsToCheck = new HashSet<>(brokenLamps);
 
-        if (currentClosestLampTask != null && !currentClosestLampTask.isDone()) {
-            currentClosestLampTask.cancel(true);
-        }
+		if (lampsToCheck.isEmpty())
+		{
+			if (lastLoggedClosestLamp != null)
+			{
+				log.info("No broken lamps found");
+				lastLoggedClosestLamp = null;
+			}
+			shortestPath.clear();
+			closestDistance = 0;
+			return;
+		}
 
-        final WorldPoint playerPos = playerLocation;
+		long currentTime = System.currentTimeMillis();
+		if (currentTime - lastClosestLampCalculation < CLOSEST_LAMP_COOLDOWN_MS)
+		{
+			return;
+		}
+		lastClosestLampCalculation = currentTime;
 
-        currentClosestLampTask = CompletableFuture.runAsync(() -> {
-            try {
-                final Set<WorldPoint> brokenLampLocations = lampsToCheck.stream()
-                        .map(Lamp::getWorldPoint)
-                        .collect(Collectors.toSet());
+		if (currentClosestLampTask != null && !currentClosestLampTask.isDone())
+		{
+			currentClosestLampTask.cancel(true);
+		}
 
-                if (Thread.currentThread().isInterrupted()) {
-                    return;
-                }
+		final WorldPoint playerPos = playerLocation;
 
-                log.debug("Calculating closest broken lamp from {} among {}", playerPos, brokenLampLocations);
-                List<WorldPoint> path = pathfinder.findNearestPath(playerPos, brokenLampLocations, lampWallCache);
-                log.debug("Found path to broken lamps: " + path);
+		currentClosestLampTask = CompletableFuture.runAsync(() ->
+		{
+			try
+			{
+				final Set<WorldPoint> brokenLampLocations = lampsToCheck.stream().map(Lamp::getWorldPoint)
+						.collect(Collectors.toSet());
 
-                if (Thread.currentThread().isInterrupted()) {
-                    return;
-                }
+				if (Thread.currentThread().isInterrupted())
+				{
+					return;
+				}
 
-                if (path != null && !path.isEmpty()) {
-                    final List<WorldPoint> finalPath = new ArrayList<>(path);
-                    final int finalDistance = finalPath.size();
-                    final WorldPoint destination = finalPath.get(finalPath.size() - 1);
+				log.debug("Calculating closest broken lamp from {} among {}", playerPos, brokenLampLocations);
+				List<WorldPoint> path = pathfinder.findNearestPath(playerPos, brokenLampLocations, lampWallCache);
+				log.debug("Found path to broken lamps: " + path);
 
-                    final Lamp finalClosestLamp = lampsToCheck.stream()
-                            .filter(lamp -> lamp.getWorldPoint().equals(destination))
-                            .findFirst()
-                            .orElse(null);
+				if (Thread.currentThread().isInterrupted())
+				{
+					return;
+				}
 
-                    shortestPath = finalPath;
-                    closestDistance = finalDistance;
+				if (path != null && !path.isEmpty())
+				{
+					final List<WorldPoint> finalPath = new ArrayList<>(path);
+					final int finalDistance = finalPath.size();
+					final WorldPoint destination = finalPath.get(finalPath.size() - 1);
 
-                    if (finalClosestLamp != null && !finalClosestLamp.equals(lastLoggedClosestLamp)) {
-                        lastLoggedClosestLamp = finalClosestLamp;
-                    }
-                } else {
-                    shortestPath.clear();
-                    closestDistance = 0;
-                    if (lastLoggedClosestLamp != null) {
-                        lastLoggedClosestLamp = null;
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error during closest lamp calculation (BFS)", e);
-                shortestPath.clear();
-                closestDistance = 0;
-                lastLoggedClosestLamp = null;
-            }
-        }, pathfindingExecutor).exceptionally(throwable -> {
-            if (!(throwable instanceof java.util.concurrent.CancellationException)) {
-                log.error("Closest lamp calculation (BFS) failed", throwable);
-            }
-            return null;
-        });
-    }
+					final Lamp finalClosestLamp = lampsToCheck.stream()
+							.filter(lamp -> lamp.getWorldPoint().equals(destination)).findFirst().orElse(null);
 
-    private void calculatePathToTarget(WorldPoint targetLocation, TargetType targetType, WorldPoint playerLocation) {
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastClosestLampCalculation < CLOSEST_LAMP_COOLDOWN_MS) {
-            return;
-        }
-        lastClosestLampCalculation = currentTime;
+					shortestPath = finalPath;
+					closestDistance = finalDistance;
 
-        if (currentClosestLampTask != null && !currentClosestLampTask.isDone()) {
-            currentClosestLampTask.cancel(true);
-        }
+					if (finalClosestLamp != null && !finalClosestLamp.equals(lastLoggedClosestLamp))
+					{
+						lastLoggedClosestLamp = finalClosestLamp;
+					}
+				}
+				else
+				{
+					shortestPath.clear();
+					closestDistance = 0;
+					if (lastLoggedClosestLamp != null)
+					{
+						lastLoggedClosestLamp = null;
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				log.error("Error during closest lamp calculation (BFS)", e);
+				shortestPath.clear();
+				closestDistance = 0;
+				lastLoggedClosestLamp = null;
+			}
+		}, pathfindingExecutor).exceptionally(throwable ->
+		{
+			if (!(throwable instanceof java.util.concurrent.CancellationException))
+			{
+				log.error("Closest lamp calculation (BFS) failed", throwable);
+			}
+			return null;
+		});
+	}
 
-        final WorldPoint playerPos = playerLocation;
-        final WorldPoint target = targetLocation;
+	private void calculatePathToTarget(WorldPoint targetLocation, TargetType targetType, WorldPoint playerLocation)
+	{
+		long currentTime = System.currentTimeMillis();
+		if (currentTime - lastClosestLampCalculation < CLOSEST_LAMP_COOLDOWN_MS)
+		{
+			return;
+		}
+		lastClosestLampCalculation = currentTime;
 
-        if (DKLampsHelper.isInBankArea(playerLocation) && targetType == TargetType.BANK) {
-            shortestPath.clear();
-            return;
-        }
+		if (currentClosestLampTask != null && !currentClosestLampTask.isDone())
+		{
+			currentClosestLampTask.cancel(true);
+		}
 
-        currentClosestLampTask = CompletableFuture.runAsync(() -> {
-            try {
-                if (Thread.currentThread().isInterrupted()) {
-                    return;
-                }
+		final WorldPoint playerPos = playerLocation;
+		final WorldPoint target = targetLocation;
 
-                List<WorldPoint> path = pathfinder.findPath(playerPos, target);
+		if (DKLampsHelper.isInBankArea(playerLocation) && targetType == TargetType.BANK)
+		{
+			shortestPath.clear();
+			return;
+		}
 
-                if (!Thread.currentThread().isInterrupted()) {
-                    if (path != null && !path.isEmpty()) {
-                        shortestPath = new ArrayList<>(path);
-                        closestDistance = path.size();
-                    } else {
-                        shortestPath = new ArrayList<>();
-                        shortestPath.add(playerPos);
-                        shortestPath.add(target);
-                        closestDistance = target.distanceTo(playerPos);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error calculating path to {}: {}", targetType, e.getMessage());
-                if (!Thread.currentThread().isInterrupted()) {
-                    shortestPath = new ArrayList<>();
-                    shortestPath.add(playerPos);
-                    shortestPath.add(target);
-                    closestDistance = target.distanceTo(playerPos);
-                }
-            }
-        }, pathfindingExecutor).exceptionally(throwable -> {
-            if (!(throwable instanceof java.util.concurrent.CancellationException)) {
-                log.error("Path calculation to {} failed", targetType, throwable);
-            }
-            return null;
-        });
-    }
+		currentClosestLampTask = CompletableFuture.runAsync(() ->
+		{
+			try
+			{
+				if (Thread.currentThread().isInterrupted())
+				{
+					return;
+				}
+
+				List<WorldPoint> path = pathfinder.findPath(playerPos, target);
+
+				if (!Thread.currentThread().isInterrupted())
+				{
+					if (path != null && !path.isEmpty())
+					{
+						shortestPath = new ArrayList<>(path);
+						closestDistance = path.size();
+					}
+					else
+					{
+						shortestPath = new ArrayList<>();
+						shortestPath.add(playerPos);
+						shortestPath.add(target);
+						closestDistance = target.distanceTo(playerPos);
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				log.error("Error calculating path to {}: {}", targetType, e.getMessage());
+				if (!Thread.currentThread().isInterrupted())
+				{
+					shortestPath = new ArrayList<>();
+					shortestPath.add(playerPos);
+					shortestPath.add(target);
+					closestDistance = target.distanceTo(playerPos);
+				}
+			}
+		}, pathfindingExecutor).exceptionally(throwable ->
+		{
+			if (!(throwable instanceof java.util.concurrent.CancellationException))
+			{
+				log.error("Path calculation to {} failed", targetType, throwable);
+			}
+			return null;
+		});
+	}
 }

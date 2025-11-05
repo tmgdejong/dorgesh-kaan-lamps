@@ -1,6 +1,7 @@
 package com.dklamps.enums;
 
-public enum HighlightType {
-    BORDER,
-    CLICKBOX
+public enum HighlightType
+{
+	BORDER,
+	CLICKBOX
 }

@@ -31,7 +31,8 @@ public interface DKLampsConfig extends Config {
 		section = pathSection,
 		position = 1
 	)
-	default boolean showPathToLocation() {
+	default boolean showPathToLocation() 
+	{
 		return true;
 	}
 
@@ -42,7 +43,8 @@ public interface DKLampsConfig extends Config {
 		section = pathSection,
 		position = 2
 	)
-	default PathDrawStyle pathDrawStyle() {
+	default PathDrawStyle pathDrawStyle() 
+	{
 		return PathDrawStyle.TILES;
 	}
 
@@ -53,7 +55,8 @@ public interface DKLampsConfig extends Config {
 		section = pathSection,
 		position = 3
 	)
-	default Color pathColor() {
+	default Color pathColor() 
+	{
 		return new Color(255, 102, 102);
 	}
 
@@ -64,7 +67,8 @@ public interface DKLampsConfig extends Config {
 		section = pathSection,
 		position = 4
 	)
-	default Color utilityPathColor() {
+	default Color utilityPathColor() 
+	{
 		return new Color(102, 255, 102);
 	}
 
@@ -73,9 +77,10 @@ public interface DKLampsConfig extends Config {
 		name = "Teleport Hint Distance",
 		description = "Show a teleport hint if the path to the closest lamp is longer than this. 0 to disable.",
 		section = pathSection,
-		position = 5
+		position = 6
 	)
-	default int maxPathDistance() {
+	default int maxPathDistance() 
+	{
 		return 64;
 	}
 
@@ -94,7 +99,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 1
 	)
-	default HighlightType lampsHighlightStyle() {
+	default HighlightType lampsHighlightStyle()
+	 {
 		return HighlightType.CLICKBOX;
 	}
 
@@ -105,7 +111,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 2
 	)
-	default boolean highlightBrokenLamps() {
+	default boolean highlightBrokenLamps() 
+	{
 		return true;
 	}
 
@@ -116,7 +123,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 3
 	)
-	default Color getBrokenLampColor() {
+	default Color getBrokenLampColor() 
+	{
 		return Color.RED;
 	}
 
@@ -127,7 +135,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 4
 	)
-	default boolean highlightWorkingLamps() {
+	default boolean highlightWorkingLamps() 
+	{
 		return false;
 	}
 
@@ -138,7 +147,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 5
 	)
-	default Color getWorkingLampColor() {
+	default Color getWorkingLampColor() 
+	{
 		return Color.GREEN;
 	}
 
@@ -149,7 +159,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 6
 	)
-	default boolean highlightAllLamps() {
+	default boolean highlightAllLamps() 
+	{
 		return false;
 	}
 
@@ -160,7 +171,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 7
 	)
-	default Color getDefaultLampColor() {
+	default Color getDefaultLampColor() 
+	{
 		return Color.GRAY;
 	}
 
@@ -171,7 +183,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 8
 	)
-	default boolean highlightOtherPlanesLamps() {
+	default boolean highlightOtherPlanesLamps() 
+	{
 		return false;
 	}
 
@@ -182,7 +195,8 @@ public interface DKLampsConfig extends Config {
 		section = lampsSection,
 		position = 9
 	)
-	default boolean darkenOtherPlanesLamps() {
+	default boolean darkenOtherPlanesLamps() 
+	{
 		return true;
 	}
 
@@ -201,7 +215,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 1
 	)
-	default HighlightType objectsHighlightStyle() {
+	default HighlightType objectsHighlightStyle() 
+	{
 		return HighlightType.CLICKBOX;
 	}
 
@@ -212,7 +227,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 2
 	)
-	default boolean highlightWireMachine() {
+	default boolean highlightWireMachine() 
+	{
 		return true;
 	}
 
@@ -223,7 +239,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 3
 	)
-	default Color wireMachineHighlightColor() {
+	default Color wireMachineHighlightColor() 
+	{
 		return Color.ORANGE;
 	}
 
@@ -234,7 +251,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 4
 	)
-	default TimerType timerType() {
+	default TimerType timerType() 
+	{
 		return TimerType.PIE;
 	}
 
@@ -245,7 +263,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 5
 	)
-	default boolean highlightInformativeStairs() {
+	default boolean highlightInformativeStairs() 
+	{
 		return true;
 	}
 
@@ -256,7 +275,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 6
 	)
-	default Color informativeStairColor() {
+	default Color informativeStairColor() 
+	{
 		return new Color(255, 102, 183);
 	}
 
@@ -267,7 +287,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 7
 	)
-	default boolean highlightClosedDoors() {
+	default boolean highlightClosedDoors() 
+	{
 		return false;
 	}
 
@@ -278,7 +299,8 @@ public interface DKLampsConfig extends Config {
 		section = hintsSection,
 		position = 8
 	)
-	default Color doorHighlightColor() {
+	default Color doorHighlightColor() 
+	{
 		return Color.YELLOW;
 	}
 
@@ -297,7 +319,8 @@ public interface DKLampsConfig extends Config {
 		section = uiSection,
 		position = 1
 	)
-	default boolean enableSidePanel() {
+	default boolean enableSidePanel() 
+	{
 		return true;
 	}
 
@@ -308,7 +331,8 @@ public interface DKLampsConfig extends Config {
 		section = uiSection,
 		position = 2
 	)
-	default DisplayFloorType displayWorkingLampsInPanel() {
+	default DisplayFloorType displayWorkingLampsInPanel() 
+	{
 		return DisplayFloorType.ALL_FLOORS;
 	}
 
@@ -319,7 +343,8 @@ public interface DKLampsConfig extends Config {
 		section = uiSection,
 		position = 3
 	)
-	default DisplayFloorType displayPlayerInPanel() {
+	default DisplayFloorType displayPlayerInPanel() 
+	{
 		return DisplayFloorType.ALL_FLOORS;
 	}
 
@@ -331,7 +356,8 @@ public interface DKLampsConfig extends Config {
 		section = uiSection,
 		position = 4
 	)
-	default int playerOpacityOtherFloors() {
+	default int playerOpacityOtherFloors() 
+	{
 		return 75;
 	}
 
@@ -342,7 +368,8 @@ public interface DKLampsConfig extends Config {
 		section = uiSection,
 		position = 5
 	)
-	default boolean showStatsOverlay() {
+	default boolean showStatsOverlay() 
+	{
 		return true;
 	}
 
@@ -353,7 +380,8 @@ public interface DKLampsConfig extends Config {
 		section = uiSection,
 		position = 6
 	)
-	default boolean showClosestDistance() {
+	default boolean showClosestDistance() 
+	{
 		return true;
 	}
 
@@ -373,7 +401,8 @@ public interface DKLampsConfig extends Config {
 		section = highlightStyleSection,
 		position = 1
 	)
-	default int borderThickness() {
+	default int borderThickness() 
+	{
 		return 2;
 	}
 
@@ -385,7 +414,8 @@ public interface DKLampsConfig extends Config {
 		section = highlightStyleSection,
 		position = 2
 	)
-	default int borderFeather() {
+	default int borderFeather() 
+	{
 		return 0;
 	}
 }

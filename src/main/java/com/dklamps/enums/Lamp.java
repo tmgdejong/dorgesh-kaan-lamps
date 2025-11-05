@@ -1,12 +1,13 @@
 package com.dklamps.enums;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import net.runelite.api.coords.WorldPoint;
-import java.util.List;
-import java.util.Arrays;
 
 @Getter
-public enum Lamp {
+@RequiredArgsConstructor
+public enum Lamp
+{
 	// Plane 0 South
 	P0_S_LAMP_1(0, 22988, new WorldPoint(2738, 5283, 0), Area.P0_S),
 	P0_S_LAMP_2(1, 22989, new WorldPoint(2749, 5292, 0), Area.P0_S),
@@ -63,7 +64,7 @@ public enum Lamp {
 	P1_N_LAMP_10(14, 23015, new WorldPoint(2739, 5362, 1), Area.P1_N),
 	P1_N_LAMP_11(15, 23016, new WorldPoint(2733, 5350, 1), Area.P1_N),
 	P1_N_LAMP_12(16, 23023, new WorldPoint(2705, 5348, 1), Area.P1_N),
-    P1_N_LAMP_13(17, 23041, new WorldPoint(2701, 5366, 1), Area.P1_N),
+	P1_N_LAMP_13(17, 23041, new WorldPoint(2701, 5366, 1), Area.P1_N),
 
 	// Plane 2 South
 	P2_S_LAMP_1(0, 22984, new WorldPoint(2741, 5283, 2), Area.P2_S),
@@ -87,17 +88,4 @@ public enum Lamp {
 	private final int objectId;
 	private final WorldPoint worldPoint;
 	private final Area area;
-	private final List<Direction> unreachableDirections;
-
-	Lamp(int bitPosition, int objectId, WorldPoint worldPoint, Area area) {
-		this(bitPosition, objectId, worldPoint, area, new Direction[0]);
-	}
-
-	Lamp(int bitPosition, int objectId, WorldPoint worldPoint, Area area, Direction... unreachableDirections) {
-		this.bitPosition = bitPosition;
-		this.objectId = objectId;
-		this.worldPoint = worldPoint;
-		this.area = area;
-		this.unreachableDirections = Arrays.asList(unreachableDirections);
-	}
 }

@@ -5,7 +5,8 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-public final class DKLampsConstants {
+public final class DKLampsConstants 
+{
     private DKLampsConstants() {}
 
     public static final int NAV_BUTTON_PRIORITY = 7;
@@ -76,18 +77,4 @@ public static final Set<Integer> STAIR_IDS_DOWN = ImmutableSet.of(
     // Bank location in Dorgesh-Kaan
     public static final WorldPoint WIRE_MACHINE_LOCATION = new WorldPoint(2716, 5274, 0);
     public static final WorldPoint BANK_LOCATION = new WorldPoint(2702, 5349, 0);
-    public static final Set<WorldPoint> BANK_TILES = ImmutableSet.of(
-            new WorldPoint(2701, 5347, 0),
-            new WorldPoint(2701, 5348, 0),
-            new WorldPoint(2701, 5349, 0),
-            new WorldPoint(2701, 5350, 0),
-            new WorldPoint(2701, 5351, 0),
-            new WorldPoint(2701, 5352, 0),
-            new WorldPoint(2702, 5347, 0),
-            new WorldPoint(2702, 5348, 0),
-            new WorldPoint(2702, 5349, 0),
-            new WorldPoint(2702, 5350, 0),
-            new WorldPoint(2702, 5351, 0),
-            new WorldPoint(2702, 5352, 0)
-    );
 }

@@ -1,7 +1,8 @@
 package com.dklamps.enums;
 
-public enum LampStatus {
-    BROKEN,
-    WORKING,
-    UNKNOWN,
+public enum LampStatus
+{
+	BROKEN,
+	WORKING,
+	UNKNOWN,
 }

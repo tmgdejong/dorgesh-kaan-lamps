@@ -26,171 +26,209 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.util.ImageUtil;
 
 @Slf4j
-public class MapPanel extends JPanel {
+public class MapPanel extends JPanel
+{
 
-    private final DKLampsPlugin plugin;
-    private final int plane;
-    @Getter
-    private final String title;
-    private final List<Lamp> lampsOnThisFloor;
-    private final BufferedImage mapImage;
+	private final DKLampsPlugin plugin;
+	private final int plane;
+	@Getter
+	private final String title;
+	private final List<Lamp> lampsOnThisFloor;
+	private final BufferedImage mapImage;
 
-    MapPanel(DKLampsPlugin plugin, int plane, String title) {
-        this.plugin = plugin;
-        this.plane = plane;
-        this.title = title;
-        this.mapImage = ImageUtil.loadImageResource(getClass(), "/map_p" + plane + ".png");
+	MapPanel(DKLampsPlugin plugin, int plane, String title)
+	{
+		this.plugin = plugin;
+		this.plane = plane;
+		this.title = title;
+		this.mapImage = ImageUtil.loadImageResource(getClass(), "/map_p" + plane + ".png");
 
-        setLayout(new BorderLayout());
+		setLayout(new BorderLayout());
 
-        JPanel mapDisplay = new MapDisplay();
-        add(mapDisplay, BorderLayout.CENTER);
+		JPanel mapDisplay = new MapDisplay();
+		add(mapDisplay, BorderLayout.CENTER);
 
-        this.lampsOnThisFloor = Arrays.stream(Lamp.values())
-                .filter(lamp -> lamp.getWorldPoint().getPlane() == plane)
-                .collect(Collectors.toList());
-    }
+		this.lampsOnThisFloor = Arrays.stream(Lamp.values()).filter(lamp -> lamp.getWorldPoint().getPlane() == plane)
+				.collect(Collectors.toList());
+	}
 
-    public void update() {
-        this.repaint();
-    }
+	public void update()
+	{
+		this.repaint();
+	}
 
-    private class MapDisplay extends JPanel {
-        MapDisplay() {}
+	private class MapDisplay extends JPanel
+	{
+		MapDisplay()
+		{
+		}
 
-        @Override
-        public Dimension getPreferredSize() {
-            if (mapImage == null) {
-                return new Dimension(0, 0);
-            }
-            int panelHeight = getParent().getHeight();
-            if (panelHeight <= 0) {
-                panelHeight = 200;
-            }
-            double scale = (double) panelHeight / mapImage.getHeight();
-            int panelWidth = getParent().getWidth();
-            if (panelWidth <= 0) {
-                panelWidth = (int) (mapImage.getWidth() * scale);
-            }
-            return new Dimension(panelWidth, panelHeight);
-        }
+		@Override
+		public Dimension getPreferredSize()
+		{
+			if (mapImage == null)
+			{
+				return new Dimension(0, 0);
+			}
+			int panelHeight = getParent().getHeight();
+			if (panelHeight <= 0)
+			{
+				panelHeight = 200;
+			}
+			double scale = (double) panelHeight / mapImage.getHeight();
+			int panelWidth = getParent().getWidth();
+			if (panelWidth <= 0)
+			{
+				panelWidth = (int) (mapImage.getWidth() * scale);
+			}
+			return new Dimension(panelWidth, panelHeight);
+		}
 
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
+		@Override
+		protected void paintComponent(Graphics g)
+		{
+			super.paintComponent(g);
 
-            if (mapImage == null)
-                return;
-            g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null);
+			if (mapImage == null)
+				return;
+			g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), null);
 
-            Graphics2D g2d = (Graphics2D) g;
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			Graphics2D g2d = (Graphics2D) g;
+			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            if (plugin.getClient().getLocalPlayer() != null &&
-                    plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() != plane) {
-                g2d.setColor(new Color(0, 0, 0, 50));
-                g2d.fillRect(0, 0, getWidth(), getHeight());
-            }
+			if (plugin.getClient().getLocalPlayer() != null
+					&& plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() != plane)
+			{
+				g2d.setColor(new Color(0, 0, 0, 50));
+				g2d.fillRect(0, 0, getWidth(), getHeight());
+			}
 
-            if (plugin.getClient().getLocalPlayer() != null &&
-                    plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() == plane) {
-                g.setColor(Color.WHITE);
-                g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
-            }
+			if (plugin.getClient().getLocalPlayer() != null
+					&& plugin.getClient().getLocalPlayer().getWorldLocation().getPlane() == plane)
+			{
+				g.setColor(Color.WHITE);
+				g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
+			}
 
-            for (Lamp lamp : lampsOnThisFloor) {
-                LampStatus status = plugin.getStateManager().getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
+			for (Lamp lamp : lampsOnThisFloor)
+			{
+				LampStatus status = plugin.getStateManager().getLampStatuses().getOrDefault(lamp, LampStatus.UNKNOWN);
 
-                Color color;
-                if (status == LampStatus.BROKEN) {
-                    color = plugin.getConfig().getBrokenLampColor();
-                } else if (status == LampStatus.WORKING &&
-                        ((plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.ALL_FLOORS)
-                                || (plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.CURRENT_FLOOR
-                                        && lamp.getWorldPoint().getPlane() == plane))) {
-                    color = plugin.getConfig().getWorkingLampColor();
-                } else {
-                    color = plugin.getConfig().getDefaultLampColor();
-                }
+				Color color;
+				if (status == LampStatus.BROKEN)
+				{
+					color = plugin.getConfig().getBrokenLampColor();
+				}
+				else if (status == LampStatus.WORKING
+						&& ((plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.ALL_FLOORS)
+								|| (plugin.getConfig().displayWorkingLampsInPanel() == DisplayFloorType.CURRENT_FLOOR
+										&& lamp.getWorldPoint().getPlane() == plane)))
+				{
+					color = plugin.getConfig().getWorkingLampColor();
+				}
+				else
+				{
+					color = plugin.getConfig().getDefaultLampColor();
+				}
 
-                g2d.setColor(color);
-                Ellipse2D.Double circle = getLampCircle(lamp);
-                if (circle != null) {
-                    g2d.fill(circle);
-                    g2d.setColor(Color.BLACK);
-                    g2d.draw(circle);
-                }
-            }
+				g2d.setColor(color);
+				Ellipse2D.Double circle = getLampCircle(lamp);
+				if (circle != null)
+				{
+					g2d.fill(circle);
+					g2d.setColor(Color.BLACK);
+					g2d.draw(circle);
+				}
+			}
 
-            if (plugin.getClient().getLocalPlayer() != null &&
-                    plugin.getConfig().displayPlayerInPanel() != DisplayFloorType.NONE) {
-                WorldPoint playerLocation = plugin.getClient().getLocalPlayer().getWorldLocation();
-                drawPlayerDot(g2d, playerLocation);
-            }
-        }
+			if (plugin.getClient().getLocalPlayer() != null
+					&& plugin.getConfig().displayPlayerInPanel() != DisplayFloorType.NONE)
+			{
+				WorldPoint playerLocation = plugin.getClient().getLocalPlayer().getWorldLocation();
+				drawPlayerDot(g2d, playerLocation);
+			}
+		}
 
-        private Ellipse2D.Double getLampCircle(Lamp lamp) {
-            WorldPoint point = lamp.getWorldPoint();
+		private Ellipse2D.Double getLampCircle(Lamp lamp)
+		{
+			WorldPoint point = lamp.getWorldPoint();
 
-            if (point.getX() < DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() || point.getX() > DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() ||
-                    point.getY() > DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() || point.getY() < DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) {
-                log.warn("Lamp {} at {} is outside the defined map bounds!", lamp.name(), point);
-                return null;
-            }
+			if (point.getX() < DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()
+					|| point.getX() > DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX()
+					|| point.getY() > DKLampsConstants.MAP_NORTH_WEST_CORNER.getY()
+					|| point.getY() < DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY())
+			{
+				log.warn("Lamp {} at {} is outside the defined map bounds!", lamp.name(), point);
+				return null;
+			}
 
-            double mapWidthInTiles = (DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()) + 1;
-            double mapHeightInTiles = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) + 1;
+			double mapWidthInTiles = (DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX()
+					- DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()) + 1;
+			double mapHeightInTiles = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY()
+					- DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) + 1;
 
-            double lampRelativeX = (point.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
-            double lampRelativeY = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
+			double lampRelativeX = (point.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() + 0.5)
+					/ mapWidthInTiles;
+			double lampRelativeY = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5)
+					/ mapHeightInTiles;
 
-            int panelX = (int) (lampRelativeX * getWidth());
-            int panelY = (int) (lampRelativeY * getHeight());
-            int radius = 4;
+			int panelX = (int) (lampRelativeX * getWidth());
+			int panelY = (int) (lampRelativeY * getHeight());
+			int radius = 4;
 
-            return new Ellipse2D.Double(panelX - radius, panelY - radius, radius * 2, radius * 2);
-        }
+			return new Ellipse2D.Double(panelX - radius, panelY - radius, radius * 2, radius * 2);
+		}
 
-        private void drawPlayerDot(Graphics2D g2d, WorldPoint playerLocation) {
-            if (plugin.getConfig().displayPlayerInPanel() == DisplayFloorType.CURRENT_FLOOR &&
-                    playerLocation.getPlane() != plane) {
-                return;
-            }
+		private void drawPlayerDot(Graphics2D g2d, WorldPoint playerLocation)
+		{
+			if (plugin.getConfig().displayPlayerInPanel() == DisplayFloorType.CURRENT_FLOOR
+					&& playerLocation.getPlane() != plane)
+			{
+				return;
+			}
 
-            float opacity = plugin.getConfig().playerOpacityOtherFloors() * 0.01f;
-            if (playerLocation.getPlane() == plane) {
-                opacity = 1.0f;
-            }
+			float opacity = plugin.getConfig().playerOpacityOtherFloors() * 0.01f;
+			if (playerLocation.getPlane() == plane)
+			{
+				opacity = 1.0f;
+			}
 
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
-            g2d.setColor(Color.WHITE);
+			g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
+			g2d.setColor(Color.WHITE);
 
-            Ellipse2D.Double playerCircle = getPointCircle(playerLocation);
-            if (playerCircle != null) {
-                g2d.fill(playerCircle);
-                g2d.setColor(Color.WHITE);
-                g2d.draw(playerCircle);
-            }
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-        }
+			Ellipse2D.Double playerCircle = getPointCircle(playerLocation);
+			if (playerCircle != null)
+			{
+				g2d.fill(playerCircle);
+				g2d.setColor(Color.WHITE);
+				g2d.draw(playerCircle);
+			}
+			g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+		}
 
-        private Ellipse2D.Double getPointCircle(WorldPoint point) {
-            if (point.getX() < DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() || point.getX() > DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() ||
-                    point.getY() > DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() || point.getY() < DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) {
-                return null;
-            }
+		private Ellipse2D.Double getPointCircle(WorldPoint point)
+		{
+			if (point.getX() < DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()
+					|| point.getX() > DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX()
+					|| point.getY() > DKLampsConstants.MAP_NORTH_WEST_CORNER.getY()
+					|| point.getY() < DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY())
+			{
+				return null;
+			}
 
-            double mapWidthInTiles = (DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()) + 1;
-            double mapHeightInTiles = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) + 1;
+			double mapWidthInTiles = (DKLampsConstants.MAP_SOUTH_EAST_CORNER.getX()
+					- DKLampsConstants.MAP_NORTH_WEST_CORNER.getX()) + 1;
+			double mapHeightInTiles = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY()
+					- DKLampsConstants.MAP_SOUTH_EAST_CORNER.getY()) + 1;
 
-            double relativeX = (point.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
-            double relativeY = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
+			double relativeX = (point.getX() - DKLampsConstants.MAP_NORTH_WEST_CORNER.getX() + 0.5) / mapWidthInTiles;
+			double relativeY = (DKLampsConstants.MAP_NORTH_WEST_CORNER.getY() - point.getY() + 0.5) / mapHeightInTiles;
 
-            int panelX = (int) (relativeX * getWidth());
-            int panelY = (int) (relativeY * getHeight());
-            int radius = 4;
+			int panelX = (int) (relativeX * getWidth());
+			int panelY = (int) (relativeY * getHeight());
+			int radius = 4;
 
-            return new Ellipse2D.Double(panelX - radius, panelY - radius, radius * 2, radius * 2);
-        }
-    }
+			return new Ellipse2D.Double(panelX - radius, panelY - radius, radius * 2, radius * 2);
+		}
+	}
 }

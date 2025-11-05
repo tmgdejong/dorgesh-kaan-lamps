@@ -18,41 +18,43 @@ import net.runelite.client.ui.overlay.WidgetItemOverlay;
 
 public class TeleportOverlay extends WidgetItemOverlay
 {
-    private final DKLampsPlugin plugin;
-    private final DKLampsConfig config;
-    @Inject
-    private TeleportOverlay(DKLampsPlugin plugin, DKLampsConfig config, ItemManager itemManager)
-    {
-        this.plugin = plugin;
-        this.config = config;
-        showOnInventory();
-    }
+	private final DKLampsPlugin plugin;
+	private final DKLampsConfig config;
 
-    @Override
-    public void renderItemOverlay(Graphics2D graphics, int itemId, WidgetItem itemWidget)
-    {
-        if (itemId != DKLampsConstants.TELEPORT_SPHERE_ID)
-        {
-            return;
-        }
+	@Inject
+	private TeleportOverlay(DKLampsPlugin plugin, DKLampsConfig config, ItemManager itemManager)
+	{
+		this.plugin = plugin;
+		this.config = config;
+		showOnInventory();
+	}
 
-        List<WorldPoint> path = plugin.getNavigationManager().getShortestPath();
+	@Override
+	public void renderItemOverlay(Graphics2D graphics, int itemId, WidgetItem itemWidget)
+	{
+		if (itemId != DKLampsConstants.TELEPORT_SPHERE_ID)
+		{
+			return;
+		}
 
-        if (path != null && (path.size() > config.maxPathDistance() || plugin.getStateManager().getBrokenLamps().isEmpty())
-                && plugin.getNavigationManager().getCurrentTargetType() == TargetType.LAMP)
-        {
-            Rectangle bounds = itemWidget.getCanvasBounds();
-            Color oldColor = graphics.getColor();
+		List<WorldPoint> path = plugin.getNavigationManager().getShortestPath();
 
-            Color base = config.pathColor();
+		if (path != null
+				&& (path.size() > config.maxPathDistance() || plugin.getStateManager().getBrokenLamps().isEmpty())
+				&& plugin.getNavigationManager().getCurrentTargetType() == TargetType.LAMP)
+		{
+			Rectangle bounds = itemWidget.getCanvasBounds();
+			Color oldColor = graphics.getColor();
 
-            long phase = (System.currentTimeMillis() / 600) % 2;
-            int alpha = (phase == 0) ? 192 : 64;
+			Color base = config.pathColor();
 
-            graphics.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), alpha));
-            graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+			long phase = (System.currentTimeMillis() / 600) % 2;
+			int alpha = (phase == 0) ? 192 : 64;
 
-            graphics.setColor(oldColor);
-        }
-    }
+			graphics.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), alpha));
+			graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+
+			graphics.setColor(oldColor);
+		}
+	}
 }

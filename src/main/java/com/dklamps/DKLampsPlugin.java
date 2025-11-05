@@ -37,191 +37,212 @@ import net.runelite.client.util.ImageUtil;
 
 @Slf4j
 @PluginDescriptor(name = "Dorgesh-Kaan Lamps")
-public class DKLampsPlugin extends Plugin {
+public class DKLampsPlugin extends Plugin
+{
 
-    @Inject
-    @Getter
-    private Client client;
+	@Inject
+	@Getter
+	private Client client;
 
-    @Inject
-    @Getter
-    private DKLampsConfig config;
+	@Inject
+	@Getter
+	private DKLampsConfig config;
 
-    @Inject
-    private OverlayManager overlayManager;
+	@Inject
+	private OverlayManager overlayManager;
 
-    @Inject
-    private DKLampsOverlay overlay;
+	@Inject
+	private DKLampsOverlay overlay;
 
-    @Inject
-    private TeleportOverlay teleportOverlay;
+	@Inject
+	private TeleportOverlay teleportOverlay;
 
-    @Inject
-    private StatsOverlay statsOverlay;
+	@Inject
+	private StatsOverlay statsOverlay;
 
-    @Inject
-    private ClientToolbar clientToolbar;
+	@Inject
+	private ClientToolbar clientToolbar;
 
-    private DKLampsPanel panel;
-    private NavigationButton navButton;
-    @Getter
-    private DKLampsNavigationManager navigationManager;
-    @Getter
-    private DKLampsStatsTracker statsTracker;
-    @Getter
-    private DKLampsStateManager stateManager;
+	private DKLampsPanel panel;
+	private NavigationButton navButton;
+	@Getter
+	private DKLampsNavigationManager navigationManager;
+	@Getter
+	private DKLampsStatsTracker statsTracker;
+	@Getter
+	private DKLampsStateManager stateManager;
 
-    private ExecutorService pathfindingExecutor;
+	private ExecutorService pathfindingExecutor;
 
-    @Getter
-    private Pathfinder pathfinder;
+	@Getter
+	private Pathfinder pathfinder;
 
-    @Getter
-    private Instant lastTickInstant = Instant.now();
+	@Getter
+	private Instant lastTickInstant = Instant.now();
 
-    @Override
-    protected void startUp() throws Exception {
-        overlayManager.add(overlay);
-        overlayManager.add(teleportOverlay);
-        overlayManager.add(statsOverlay);
+	@Override
+	protected void startUp() throws Exception
+	{
+		overlayManager.add(overlay);
+		overlayManager.add(teleportOverlay);
+		overlayManager.add(statsOverlay);
 
-        statsTracker = new DKLampsStatsTracker();
-        stateManager = new DKLampsStateManager(client, statsTracker);
+		statsTracker = new DKLampsStatsTracker();
+		stateManager = new DKLampsStateManager(client, statsTracker);
 
-        pathfindingExecutor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "DKLamps-Pathfinder");
-            t.setDaemon(true);
-            return t;
-        });
+		pathfindingExecutor = Executors.newSingleThreadExecutor(r ->
+		{
+			Thread t = new Thread(r, "DKLamps-Pathfinder");
+			t.setDaemon(true);
+			return t;
+		});
 
-        try {
-            pathfinder = new Pathfinder();
-        } catch (IOException e) {
-            log.error("Failed to load pathfinder collision data", e);
-            return;
-        }
+		try
+		{
+			pathfinder = new Pathfinder();
+		}
+		catch (IOException e)
+		{
+			log.error("Failed to load pathfinder collision data", e);
+			return;
+		}
 
-        navigationManager = new DKLampsNavigationManager(client, config, pathfinder, pathfindingExecutor);
+		navigationManager = new DKLampsNavigationManager(client, config, pathfinder, pathfindingExecutor);
 
-        panel = new DKLampsPanel(this);
-        final BufferedImage icon = ImageUtil.loadImageResource(getClass(), DKLampsConstants.ICON_IMAGE_PATH);
-        navButton = NavigationButton.builder()
-                .tooltip("Dorgesh-Kaan Lamps")
-                .icon(icon)
-                .priority(DKLampsConstants.NAV_BUTTON_PRIORITY)
-                .panel(panel)
-                .build();
+		panel = new DKLampsPanel(this);
+		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), DKLampsConstants.ICON_IMAGE_PATH);
+		navButton = NavigationButton.builder().tooltip("Dorgesh-Kaan Lamps").icon(icon)
+				.priority(DKLampsConstants.NAV_BUTTON_PRIORITY).panel(panel).build();
 
-        if (config.enableSidePanel()) {
-            clientToolbar.addNavigation(navButton);
-        }
-    }
+		if (config.enableSidePanel())
+		{
+			clientToolbar.addNavigation(navButton);
+		}
+	}
 
-    @Override
-    protected void shutDown() throws Exception {
-        log.info("Dorgesh-Kaan Lamps stopped!");
-        overlayManager.remove(overlay);
-        overlayManager.remove(teleportOverlay);
-        overlayManager.remove(statsOverlay);
-        clientToolbar.removeNavigation(navButton);
+	@Override
+	protected void shutDown() throws Exception
+	{
+		log.info("Dorgesh-Kaan Lamps stopped!");
+		overlayManager.remove(overlay);
+		overlayManager.remove(teleportOverlay);
+		overlayManager.remove(statsOverlay);
+		clientToolbar.removeNavigation(navButton);
 
-        navigationManager.shutDown();
+		navigationManager.shutDown();
 
-        if (stateManager != null) {
-            stateManager.shutDown();
-        }
-        if (navigationManager != null) {
-            navigationManager.shutDown();
-        }
-        if (pathfindingExecutor != null) {
-            pathfindingExecutor.shutdown();
-        }
-    }
+		if (stateManager != null)
+		{
+			stateManager.shutDown();
+		}
+		if (navigationManager != null)
+		{
+			navigationManager.shutDown();
+		}
+		if (pathfindingExecutor != null)
+		{
+			pathfindingExecutor.shutdown();
+		}
+	}
 
-    @Subscribe
-    public void onConfigChanged(ConfigChanged event) {
-        if (!event.getGroup().equals(DKLampsConstants.CONFIG_GROUP)) {
-            return;
-        }
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (!event.getGroup().equals(DKLampsConstants.CONFIG_GROUP))
+		{
+			return;
+		}
 
-        if (event.getKey().equals("enableSidePanel")) {
-            if (config.enableSidePanel()) {
-                clientToolbar.addNavigation(navButton);
-            } else {
-                clientToolbar.removeNavigation(navButton);
-            }
-        }
-    }
+		if (event.getKey().equals("enableSidePanel"))
+		{
+			if (config.enableSidePanel())
+			{
+				clientToolbar.addNavigation(navButton);
+			}
+			else
+			{
+				clientToolbar.removeNavigation(navButton);
+			}
+		}
+	}
 
-    @Subscribe
-    public void onGameObjectSpawned(GameObjectSpawned event) {
-        stateManager.onGameObjectSpawned(event.getGameObject());
-    }
+	@Subscribe
+	public void onGameObjectSpawned(GameObjectSpawned event)
+	{
+		stateManager.onGameObjectSpawned(event.getGameObject());
+	}
 
-    @Subscribe
-    public void onGameObjectDespawned(GameObjectDespawned event) {
-        stateManager.onGameObjectDespawned(event.getGameObject());
-    }
+	@Subscribe
+	public void onGameObjectDespawned(GameObjectDespawned event)
+	{
+		stateManager.onGameObjectDespawned(event.getGameObject());
+	}
 
-    @Subscribe
-    public void onWallObjectSpawned(WallObjectSpawned event) {
-        stateManager.onWallObjectSpawned(event.getWallObject());
-    }
+	@Subscribe
+	public void onWallObjectSpawned(WallObjectSpawned event)
+	{
+		stateManager.onWallObjectSpawned(event.getWallObject());
+	}
 
-    @Subscribe
-    public void onWallObjectDespawned(WallObjectDespawned event) {
-        stateManager.onWallObjectDespawned(event.getWallObject());
-    }
+	@Subscribe
+	public void onWallObjectDespawned(WallObjectDespawned event)
+	{
+		stateManager.onWallObjectDespawned(event.getWallObject());
+	}
 
-    @Subscribe
-    public void onGameStateChanged(GameStateChanged gameStateChanged) {
-        stateManager.onGameStateChanged(gameStateChanged.getGameState());
-    }
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	{
+		stateManager.onGameStateChanged(gameStateChanged.getGameState());
+	}
 
-    @Subscribe
-    public void onChatMessage(ChatMessage chatMessage) {
-        stateManager.onChatMessage(chatMessage);
-        statsTracker.onChatMessage(chatMessage);
-    }
+	@Subscribe
+	public void onChatMessage(ChatMessage chatMessage)
+	{
+		stateManager.onChatMessage(chatMessage);
+		statsTracker.onChatMessage(chatMessage);
+	}
 
-    @Subscribe
-    public void onGameTick(GameTick gameTick) {
-        lastTickInstant = Instant.now();
+	@Subscribe
+	public void onGameTick(GameTick gameTick)
+	{
+		lastTickInstant = Instant.now();
 
-        if (client.getLocalPlayer() == null) {
-            return;
-        }
+		if (client.getLocalPlayer() == null)
+		{
+			return;
+		}
 
-        stateManager.onGameTick();
+		stateManager.onGameTick();
 
-        if (stateManager.getCurrentArea() == null) {
-            // Add a simple clear method to the nav manager
-            if (navigationManager != null) {
-                navigationManager.clearPathAndTarget();
-            }
-            client.clearHintArrow();
-            return;
-        }
+		if (stateManager.getCurrentArea() == null)
+		{
+			// Add a simple clear method to the nav manager
+			if (navigationManager != null)
+			{
+				navigationManager.clearPathAndTarget();
+			}
+			client.clearHintArrow();
+			return;
+		}
 
-        InventoryState inventoryState = InventoryState.NO_LIGHT_BULBS.getInventoryState(client);
-        WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+		InventoryState inventoryState = InventoryState.NO_LIGHT_BULBS.getInventoryState(client);
+		WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
 
-        navigationManager.update(
-                stateManager.getLampStatuses(),
-                stateManager.getLampWallCache(),
-                inventoryState,
-                playerLocation,
-                stateManager.getWireMachine());
+		navigationManager.update(stateManager.getLampStatuses(), stateManager.getLampWallCache(), inventoryState,
+				playerLocation, stateManager.getWireMachine());
 
-        if (panel.isVisible()) {
-            panel.update();
-        }
+		if (panel.isVisible())
+		{
+			panel.update();
+		}
 
-        client.clearHintArrow();
-    }
+		client.clearHintArrow();
+	}
 
-    @Provides
-    DKLampsConfig provideConfig(ConfigManager configManager) {
-        return configManager.getConfig(DKLampsConfig.class);
-    }
+	@Provides
+	DKLampsConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(DKLampsConfig.class);
+	}
 }
